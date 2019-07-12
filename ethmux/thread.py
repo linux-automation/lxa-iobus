@@ -73,7 +73,7 @@ cmd = Command()
 
 _q = queue.Queue()
 
-_t = threading.Thread(target=cmd_reciev_worker)
+_t = threading.Thread(name="sync-world", target=cmd_reciev_worker)
 
 def start():
     print("starting thread")
