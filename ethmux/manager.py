@@ -281,11 +281,22 @@ class Manager(canopen.network.MessageListener):
 network = canopen.Network()
 control = Manager()
 
-
-@thread.add_call
-def setup(channel='can0', bustype='socketcan'):
-    network.connect(channel=channel, bustype=bustype)
+def setup_async(loop, channel='can0', bustype='socketcan'):
+    """Setup the CAN/CANOpen interface"""
+    async_network_connect(network, loop, channel=channel, bustype=bustype)
     control.connect(network)
+
+def async_network_connect(self, loop, *args, **kwargs):
+    """Nearly the same as network.connect() but uses the async event loop to receive CAN packages"""
+    if "bitrate" not in kwargs:
+        for node in self.nodes.values():
+            if node.object_dictionary.bitrate:
+                kwargs["bitrate"] = node.object_dictionary.bitrate
+                break
+    self.bus = canopen.network.can.interface.Bus(*args, **kwargs)
+    logger.info("Connected to '%s'", self.bus.channel_info)
+    self.notifier = canopen.network.can.Notifier(self.bus, self.listeners, 1, loop=loop)
+    return self
 
 thread.add_call(control.inquier_lss_non_config_node)
 thread.add_call(control.setup_new_node)

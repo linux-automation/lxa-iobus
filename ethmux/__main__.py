@@ -27,12 +27,6 @@ async def await_terminate(aws, terminate_furure):
 
 
 async def bus_management(interface="can0"):
-    try:
-        await thread.cmd.setup(interface, "socketcan")
-    except OSError as e:
-        logger.exception("OSError when setting up CAN interface")
-        return
-
     await thread.cmd.reset_all_nodes()
     while True:
         new_nodes = await thread.cmd.setup_new_node()
@@ -180,13 +174,16 @@ if __name__ == "__main__":
     srv = loop.create_server(app.make_handler(),
             '127.0.0.1', 8080)
 
-    
-    logger.info("Starting async loop")
     try:
+        manager.setup_async(loop, args.interface, "socketcan")
+    
+        logger.info("Starting async loop")
         loop.run_until_complete(srv)
         loop.run_until_complete(management)
     except KeyboardInterrupt:
         print("Received exit, exiting")
+    except OSError:
+        logger.exception("OSError")
 
     logger.info("Stopping async loop")
 
