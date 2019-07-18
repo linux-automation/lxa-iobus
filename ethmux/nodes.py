@@ -34,9 +34,19 @@ class Input:
 
 class Output(Input):
     INDEX = 0x2100
+    def __init__(self, address, channel):
+        self.address = address
+        self.channel = channel
+        self.output_state = 0
+
     async def write(self, mask, data):
+
+        self.output_state = (self.output_state & (~maks)) | ( data & mask)
         data = int2array4(((mask&0xffff)<<16) | (data&0xffff))
         await thread.cmd.download(self.address, self.INDEX, (self.channel*2+2), data)
+
+    async def restore_state(self):
+        await self.write(0xffff, self.output_state)
 
 class ADC:
     def __init__(self, address, channel):
@@ -54,17 +64,15 @@ class ADC:
 
 class Node:
     def __init__(self, address):
-        print("protocol_count")
         self.address = address
         self.inputs = []
         self.outputs = []
         self.adcs = []
+        self.is_alive = True
 
     async def get_config(self):
-        print("protocol_count")
         protocol_count = await thread.cmd.upload(self.address, 0x2000, 0)
         protocol_count = array2int(protocol_count)
-        print("protocol_count", protocol_count)
         
         protocols = []
         for i in range(protocol_count):
@@ -77,7 +85,6 @@ class Node:
         if 0x2101 in protocols:
             channel_count = await thread.cmd.upload(self.address, 0x2101, 0)
             channel_count = int(array2int(channel_count)/2)
-            print("channel_count", channel_count)
 
             for i in range(channel_count):
                 channel = Input(self.address, i)
@@ -90,7 +97,6 @@ class Node:
         if 0x2100 in protocols:
             channel_count = await thread.cmd.upload(self.address, 0x2100, 0)
             channel_count = int(array2int(channel_count)/2)
-            print("channel_count", channel_count)
 
             for i in range(channel_count):
                 channel = Output(self.address, i)
@@ -102,7 +108,6 @@ class Node:
         if 0x2adc in protocols:
             channel_count = await thread.cmd.upload(self.address, 0x2adc, 0)
             channel_count = int(array2int(channel_count))
-            print("ADC channel_count", channel_count)
 
             for i in range(channel_count):
                 channel = ADC(self.address, i)
@@ -121,6 +126,6 @@ class Node:
         for ch in self.adcs:
             adcs.append(ch.info())
 
-        return {"inputs": inputs, "outputs": outputs, "adcs": adcs}
+        return {"inputs": inputs, "outputs": outputs, "adcs": adcs, "alive": self.is_alive}
 
 

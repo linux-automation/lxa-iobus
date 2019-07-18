@@ -75,11 +75,11 @@ class CanNodes():
         self.network = network
 
     def add_node(self, node_id, lss):
-        """If node does not exist its added a node_id lss mapping"""
+        """If node does not exist its added a node_id lss mapping else update mapping"""
         if len(lss) != 4:
             raise Exception("Not a valid LSS adresse")
 
-        # Is this mapping already set?
+        # Is this mapping already uptodate?
         old_node_map = self.get_node_by_lss(lss)
         if not old_node_map is None:
             if old_node_map.node_id == node_id:

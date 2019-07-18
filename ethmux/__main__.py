@@ -27,17 +27,33 @@ async def await_terminate(aws, terminate_furure):
 
 
 async def bus_management(interface="can0"):
+    """Search for new nodes and cleanup old ones."""
     await thread.cmd.reset_all_nodes()
     while True:
         new_nodes = await thread.cmd.setup_new_node()
-        if len(new_nodes) > 0:
-            logger.info("New_node found %s", new_nodes)
         for node in new_nodes:
-            logger.info("add %s", node)
-            activ_nodes[node] = nodes.Node(node)
-            await activ_nodes[node].get_config()
+            logger.info("Found Node: %s", node)
+            node_config = activ_nodes.get(node, None)
+            if not node_config is None:
+                node_config.is_alive = True
+                logger.info("New Node alread known")
+                continue
+
+            node_config = nodes.Node(node)
+            try:
+                await node_config.get_config()
+            except BaseException as e:
+                logger.exception("Requesting the config from node %s failed", node)
+            finally:
+                activ_nodes[node] = node_config
+                logger.info("Node %s has been added", node)
 
         dead_nodes = await thread.cmd.cleanup_old_nodes()
+        for dead in dead_nodes:
+            node_config = activ_nodes.get(dead, None)
+            if node_config is None:
+                continue
+            node_config.is_alive = False
         await asyncio.sleep(1)
 
 async def get_index(request):
