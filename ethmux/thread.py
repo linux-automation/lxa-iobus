@@ -9,6 +9,7 @@ import json
 callbacks = {}
 
 def add_call(name, pass_func=None):
+    """Function or decorator to add function calls to the ipc"""
     if isinstance(name, str): 
         def decorator_add_call(func):
             callbacks[name] = func
@@ -29,6 +30,7 @@ def echo(*args, **kwargs):
     return (args, kwargs)
 
 def callback_router(cmd, args):
+    """Looks up a given command and calls it with args"""
     if cmd in callbacks:
         args, kwargs = args
         return callbacks[cmd](*args, **kwargs)
@@ -49,7 +51,7 @@ def cmd_reciev_worker():
         try:
             res = callback_router(cmd, args)
             future.set_result(res)
-        except Exception as e:
+        except BaseException as e:
             future.set_exception(e)
 
 async def send_cmd(cmd, *args):

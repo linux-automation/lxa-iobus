@@ -20,7 +20,7 @@ class CanNode():
     def __init__(self, lss_address, node_id, node):
         self._lss_address = lss_address
         self._node_id = node_id
-        self.node =node 
+        self.node = node 
         self.last_seen = time()
 
     @property
@@ -41,34 +41,32 @@ class CanNode():
 
     def age(self):
         """Time since last seen"""
-        return time()-self.last_seen
+        return time() - self.last_seen
 
     def poke_node(self):
         """Send request to node to check if its is still there"""
         try:
             self.node.sdo.upload(0x2000,0)
+            #self.seen() # if this works we got a responce (this is to make sure is_alive() gets an uptodata age)
+            # FIXME seen() might not be needed here
         except:
             logger.exception("poke Failed")
             pass
-        #TODO:Send and recive data
 
     def is_alive(self):
-
-#        return True #TODO: FIXME: is alive chack is disabled. needs to be fixed
+        """If node has not been seen for ACTIV_TIMEOUT returns false"""
         # Have we heard of the node?
         # if not send a request
-        age = time() - self.last_seen
-        if age > self.PASSIVE_TIMEOUT:
+        if self.age() > self.PASSIVE_TIMEOUT:
             self.poke_node()
 
         # Have we heard something after the requests?
-        age = time() - self.last_seen
-        if age > self.ACTIV_TIMEOUT:
+        if self.age() > self.ACTIV_TIMEOUT:
             return False
         return True
 
     def __str__(self):
-        return "{}, {:x} {:x} {:x} {x:}".format(self._node_id, *self._lss_address)
+        return "{}, {:x} {:x} {:x} {:x}".format(self._node_id, *self._lss_address)
 
 class CanNodes():
     """Holds the Mappings from LSS address to CANOpen bus address"""
@@ -77,7 +75,7 @@ class CanNodes():
         self.network = network
 
     def add_node(self, node_id, lss):
-        """If node does not excistAdds a node_id lss mapping"""
+        """If node does not exist its added a node_id lss mapping"""
         if len(lss) != 4:
             raise Exception("Not a valid LSS adresse")
 
@@ -142,6 +140,7 @@ class CanNodes():
         node.seen()
 
     def get_list(self):
+        """Retuns a list with a dict for every node on the bus containing its mapping and age"""
         out = []
         for node in self.nodes:
             out.append({"node_id": node.node_id,
@@ -149,8 +148,8 @@ class CanNodes():
                 "age": node.age()})
         return out
 
-    def cleanup_nodes(self, age=1):
-        """remove all node that have not been seen for age amout of time"""
+    def cleanup_nodes(self):
+        """remove all node that have not been seen for ACTIV_TIMEOUT"""
         dead_nodes = []
         for node in self.nodes:
             if not node.is_alive():
@@ -162,12 +161,18 @@ class CanNodes():
         return dead_nodes
 
     def upload(self, lss, index, subindex):
+        """SDO uploade. Node->Server"""
         node = self.get_node_by_lss(lss)
+        if node is None:
+            raise Exception("No mapping for address: {}".format(lss))
         return node.node.sdo.upload(index, subindex)
 
     def download(self, lss, index, subindex, data):
+        """SDO download. Server->Node"""
         node = self.get_node_by_lss(lss)
-        return node.node.sdo.download(index, subindex, data)
+        if node is None:
+            raise Exception("No mapping for address: {}".format(lss))
+        return node.node.sdo.download(index, subindex, bytearray(data))
 
 class Manager(canopen.network.MessageListener):
     """keeps track of all nodes in the network
@@ -189,7 +194,7 @@ class Manager(canopen.network.MessageListener):
         self.network.listeners.append(self)
 
     def reset_all_nodes(self):
-        """Resets all nodes back to Unconfigured state"""
+        """Resets all nodes back to unconfigured state. Does probably not work for other node Implementation"""
         #TODO: Send NMT Reset to get everything back to normal
         logger.info("Unconfigure all nodes")
         try:
@@ -200,7 +205,7 @@ class Manager(canopen.network.MessageListener):
             pass
 
     def on_message_received(self, msg):
-        """Lissen to the can bus and note down all nodes that have been seen"""
+        """Listen to the can bus and note down all nodes that have been seen"""
         cob_id = msg.arbitration_id
 
         service = cob_id & 0x780
@@ -214,7 +219,7 @@ class Manager(canopen.network.MessageListener):
     def cleanup_old_nodes(self):
         dead_nodes = self.nodes.cleanup_nodes()
         for i in range(len(dead_nodes)):
-            dead_nodes[i] = lss_to_node_adr(dead_nodes[i])
+            dead_nodes[i] = lss_to_node_adr(dead_nodes[i].lss_address)
         return dead_nodes
 
     def inquier_lss_non_config_node(self):
@@ -231,8 +236,11 @@ class Manager(canopen.network.MessageListener):
 
         nodes_found = []
 
-        #logger.debug("Checking for new Nodes")
+        # Switch all LSS Clients to waiting
+        self.network.lss.send_switch_state_global(self.network.lss.WAITING_STATE)
+
         # Check for unconfigured nodes
+        #FIXME: this is probably not stable
         found = self.network.lss._LssMaster__send_fast_scan_message(0, 128, 0, 0)
 
         if not found:
@@ -241,10 +249,9 @@ class Manager(canopen.network.MessageListener):
         logger.debug("Found unconfigured Node")
 
         # Switch network to Stopped to stop PDO messages
+        # This is probably not needed
         self.network.nmt.state = "STOPPED"
 
-        # Switch all LSS Clients to waiting
-        self.network.lss.send_switch_state_global(self.network.lss.WAITING_STATE)
 
         while True:
             found, lss_address = self.network.lss.fast_scan()
@@ -264,10 +271,11 @@ class Manager(canopen.network.MessageListener):
         return nodes_found
 
     def upload(self, lss, index, subindex):
+        logger.debug("upload %s %d %d", lss, index, subindex)
         return self.nodes.upload(node_adr_to_lss(lss), index, subindex)
 
-    def download(self, lss, index, subindex):
-        return self.nodes.download(node_adr_to_lss(lss), index, subindex)
+    def download(self, lss, index, subindex, data):
+        return self.nodes.download(node_adr_to_lss(lss), index, subindex, data)
 
 
 network = canopen.Network()
@@ -278,7 +286,6 @@ control = Manager()
 def setup(channel='can0', bustype='socketcan'):
     network.connect(channel=channel, bustype=bustype)
     control.connect(network)
-
 
 thread.add_call(control.inquier_lss_non_config_node)
 thread.add_call(control.setup_new_node)
