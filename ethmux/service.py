@@ -87,7 +87,7 @@ async def handel_unix(request):
 
         response = json.dumps({"error": False, "error_msg": "", "resulte": response})
         return response
-    except IndexError as e:
+    except BaseException as e:
         return error(str(e))
             
 

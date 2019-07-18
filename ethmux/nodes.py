@@ -41,7 +41,7 @@ class Output(Input):
 
     async def write(self, mask, data):
 
-        self.output_state = (self.output_state & (~maks)) | ( data & mask)
+        self.output_state = (self.output_state & (~mask)) | ( data & mask)
         data = int2array4(((mask&0xffff)<<16) | (data&0xffff))
         await thread.cmd.download(self.address, self.INDEX, (self.channel*2+2), data)
 
