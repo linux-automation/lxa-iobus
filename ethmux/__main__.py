@@ -127,12 +127,15 @@ async def get_channel_state(address, channel, interface="Input"):
 
     try:
         channel = int(channel)
-        if interface == "Input":
+        interface = interface.lower()
+        if interface == "input":
             state = await node.inputs[channel].read()
-        elif interface == "ADC":
+        elif interface == "adc":
             state = await node.adcs[channel].read()
-        else:
+        elif interface == "output":
             state = await node.outputs[channel].read()
+        else:
+            raise Exception("{} is an invalide interface".format(interface))
 
     except IndexError:
         raise Exception("Input channel not on node: {}".format(channel))
