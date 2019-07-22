@@ -49,8 +49,8 @@ class CanNode():
             self.node.sdo.upload(0x2000,0)
             #self.seen() # if this works we got a responce (this is to make sure is_alive() gets an uptodata age)
             # FIXME seen() might not be needed here
-        except:
-            logger.exception("poke Failed")
+        except canopen.sdo.exceptions.SdoCommunicationError:
+            logger.debug("poke Failed")
             pass
 
     def is_alive(self):
