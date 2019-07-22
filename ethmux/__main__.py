@@ -167,15 +167,33 @@ if __name__ == "__main__":
 
     import argparse
 
-    parser = argparse.ArgumentParser(description='Controll domain for the CANOpen bus')
-    parser.add_argument('interface', default="can0", type=str)
+    parser = argparse.ArgumentParser(description='Control domain for ethmux, usw over CANOpen')
+    parser.add_argument(
+            'interface',
+            default="can0",
+            type=str)
 
-    unix_socket_path = "/tmp/foobar"
+    parser.add_argument(
+            '-s',
+            '--socket',
+            help="Overrides the default socket.",
+            default="/tmp/canopen_master.sock",
+            type=str)
+
+    parser.add_argument(
+            '--web',
+            help="Start with webserver",
+            action='store_true')
+
+    parser.add_argument(
+            '--port',
+            help="Port to launch the webserver on",
+            default=8080,
+            type=int)
 
     args = parser.parse_args()
-
-    logger.debug("test %x",0)
-
+    print(args)
+    unix_socket_path = args.socket
 
     loop = asyncio.get_event_loop()
 
@@ -183,21 +201,27 @@ if __name__ == "__main__":
     
     management = asyncio.ensure_future(bus_management(args.interface))
 
-    ipc = service.startup_socket(unix_socket_path, loop)
+    try:
+        ipc = service.startup_socket(unix_socket_path, loop)
+    except OSError as e:
+        logger.error("Could not setup communication socket: %s", str(e))
     
-    app=web.Application()
-    app.router.add_route('GET', "/", get_index)
-    app.router.add_route('GET', "/nodes", get_nodes)
-    app.router.add_route('GET', "/upload", upload)
+    if args.web:
+        app=web.Application()
+        app.router.add_route('GET', "/", get_index)
+        app.router.add_route('GET', "/nodes", get_nodes)
+        app.router.add_route('GET', "/upload", upload)
 
-    srv = loop.create_server(app.make_handler(),
-            '127.0.0.1', 8080)
+        srv = loop.create_server(app.make_handler(),
+                '127.0.0.1', 8080)
 
     try:
         manager.setup_async(loop, args.interface, "socketcan")
     
         logger.info("Starting async loop")
-        loop.run_until_complete(srv)
+        if args.web:
+            loop.run_until_complete(srv)
+
         loop.run_until_complete(management)
     except KeyboardInterrupt:
         print("Received exit, exiting")
