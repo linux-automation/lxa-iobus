@@ -1,7 +1,7 @@
-import manager
-import thread
-import nodes
-import service
+from . import manager
+from . import thread
+from . import nodes
+from . import service
 
 import logging
 
@@ -162,9 +162,7 @@ async def set_output_masked(address, channel, mask, data):
 
 service.api_mapping["set_output_masked"] = set_output_masked
 
-
-if __name__ == "__main__":
-
+def main():
     import argparse
 
     parser = argparse.ArgumentParser(description='Control domain for ethmux, usw over CANOpen')
@@ -237,3 +235,6 @@ if __name__ == "__main__":
 
     import os
     os.remove(unix_socket_path) 
+
+if __name__ == "__main__":
+    main()

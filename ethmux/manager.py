@@ -1,5 +1,5 @@
 import canopen
-import thread
+from . import thread
 from time import time
 
 import logging

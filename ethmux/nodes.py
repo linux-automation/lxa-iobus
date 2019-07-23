@@ -1,4 +1,4 @@
-import thread
+from . import thread
 
 
 def array2int(a):
