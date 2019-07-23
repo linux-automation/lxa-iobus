@@ -3,15 +3,15 @@
 from setuptools import setup, find_packages
 
 setup(
-    name = "ethmux",
+    name = "remotelab_io",
     version = "0.1.0",
     description = "CANOpen open control domain",
-    packages = ["ethmux"],
+    packages = ["remotelab_io"],
     install_requires = ["canopen"],
     entry_points = {
         'console_scripts': [
-            'remotelab_canopen = ethmux.__main__:main',
-            'remotelab_canopen_cmd = ethmux.client:main'
+            'remotelab_canopen = remotelab_io.__main__:main',
+            'remotelab_canopen_cmd = remotelab_io.client:main'
         ]
 
     },
