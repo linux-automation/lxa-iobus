@@ -159,13 +159,13 @@ def main():
 
     parser.add_argument(
         "command",
-        help="The command to execute",
+        help="The command to be execute",
         choices=["list", "cmd"],
         type=str.lower)
 
     parser.add_argument(
         "cmds",
-        help="State to apply if command=set",
+        help="Node address and list of requests",
         type=str.lower,
         nargs="?",
         default=""
@@ -176,7 +176,7 @@ def main():
     try:
         ipc = UnixSocketIPC(args.socket)
     except:
-        print("CANOpen servic not found")
+        print("CANOpen service not found")
         exit(1)
 
     if args.command == "list":
@@ -189,7 +189,7 @@ def main():
         try:
             address, sorted_cmd_get, sorted_cmd_set = parse(args.cmds)
         except ValueError as e:
-            print("Error pasing command line: {}".format(str(e)))
+            print("Error parsing command line: {}".format(str(e)))
             exit(1)
 
         if not nodes.is_node_online(address):
