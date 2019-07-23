@@ -10,7 +10,8 @@ setup(
     install_requires = ["canopen"],
     entry_points = {
         'console_scripts': [
-            'remotelab_canopen = ethmux.__main__:main'
+            'remotelab_canopen = ethmux.__main__:main',
+            'remotelab_canopen_cmd = ethmux.client:main'
         ]
 
     },
