@@ -60,7 +60,7 @@ class Nodes:
                 print("    {}: {} Pins".format(interface_output["channel"], interface_output["pins"]))
 
             print("  ADCs:")
-            for interface_adc in interface["outputs"]:
+            for interface_adc in interface["adcs"]:
                 print("    {}:".format(interface_adc["channel"]))
 
     def is_node_online(self, address):

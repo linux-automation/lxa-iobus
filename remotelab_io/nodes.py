@@ -49,16 +49,23 @@ class Output(Input):
         await self.write(0xffff, self.output_state)
 
 class ADC:
+    INDEX = 0x2adc
     def __init__(self, address, channel):
         self.address = address
         self.channel = channel
+        self.scale = 1
+
+    async def get_config(self):
+        scale = await thread.cmd.upload(self.address, self.INDEX, (self.channel*2)+1)
+        scale = array2int(scale)
+        self.scale = ((0xffff0000&scale)>>16)/(scale&0xffff)
 
     async def read(self):
-        tmp = await thread.cmd.upload(self.address, 0x2adc, (self.channel))
-        return array2int(tmp)
+        tmp = await thread.cmd.upload(self.address, self.INDEX, (self.channel*2+2))
+        return array2int(tmp)*self.scale
 
     def info(self):
-        return {"address": self.address, "channel": self.channel}
+        return {"address": self.address, "channel": self.channel, "scale": self.scale}
 
 
 
@@ -107,10 +114,12 @@ class Node:
         # ADCs
         if 0x2adc in protocols:
             channel_count = await thread.cmd.upload(self.address, 0x2adc, 0)
-            channel_count = int(array2int(channel_count))
+            channel_count = int(array2int(channel_count)/2)
+            print("ADC", channel_count)
 
             for i in range(channel_count):
                 channel = ADC(self.address, i)
+                await channel.get_config()
                 self.adcs.append(channel)
 
     def info(self):
