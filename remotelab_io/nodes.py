@@ -85,7 +85,6 @@ class Node:
         for i in range(protocol_count):
             tmp = await thread.cmd.upload(self.address, 0x2000, i+1)
             tmp = array2int(tmp)
-            print(" *", tmp)
             protocols.append(tmp)
 
         # Inputs
@@ -115,7 +114,6 @@ class Node:
         if 0x2adc in protocols:
             channel_count = await thread.cmd.upload(self.address, 0x2adc, 0)
             channel_count = int(array2int(channel_count)/2)
-            print("ADC", channel_count)
 
             for i in range(channel_count):
                 channel = ADC(self.address, i)

@@ -106,16 +106,13 @@ async def upload(request):
         out = str(e)
         return web.Response(body=out.encode('utf-8'), content_type="text/html")
 
-    print(resp)
     out = ",".join(["0x{:X}".format(i) for i in resp])
     return web.Response(body=out.encode('utf-8'), content_type="text/html")
 
 async def get_node_list():
     """Returns list of all nodes and there interface"""
-    print(activ_nodes)
     out = {}
     for addr, node in activ_nodes.items():
-        print(addr, node)
         out[addr] = node.info()
     return out
 service.api_mapping["get_node_list"] = get_node_list
@@ -153,7 +150,6 @@ async def set_output_masked(address, channel, mask, data):
         channel = int(channel)
         mask = int(mask)
         data = int(data)
-        print(channel,mask,data)
     except IndexError:
         raise Exception("Output channel not on node: {}, {}".format(channel, len(node.outputs)) )
 
@@ -190,7 +186,6 @@ def main():
             type=int)
 
     args = parser.parse_args()
-    print(args)
     unix_socket_path = args.socket
 
     loop = asyncio.get_event_loop()
@@ -202,7 +197,7 @@ def main():
     try:
         ipc = service.startup_socket(unix_socket_path, loop)
     except OSError as e:
-        logger.error("Could not setup communication socket: %s", str(e))
+        logger.error("Could not setup communication socket: %s", e)
     
     if args.web:
         app=web.Application()
@@ -222,7 +217,7 @@ def main():
 
         loop.run_until_complete(management)
     except KeyboardInterrupt:
-        print("Received exit, exiting")
+        logger.info("Strg+c recived")
     except OSError:
         logger.exception("OSError")
 
@@ -231,10 +226,11 @@ def main():
     thread.stop()
     ipc.shutdown()
 
-    loop.run_forever()
-
-    import os
-    os.remove(unix_socket_path) 
+    try:
+        loop.run_forever()
+    finally:
+        import os
+        os.remove(unix_socket_path) 
 
 if __name__ == "__main__":
     main()

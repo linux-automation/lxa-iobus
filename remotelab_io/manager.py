@@ -198,9 +198,9 @@ class Manager(canopen.network.MessageListener):
         #TODO: Send NMT Reset to get everything back to normal
         logger.info("Unconfigure all nodes")
         try:
-            self.network.lss.send_switch_state_global(network.lss.CONFIGURATION_STATE)
+            self.network.lss.send_switch_state_global(self.network.lss.CONFIGURATION_STATE)
             self.network.lss.configure_node_id(0xff)
-            network.lss.send_switch_state_global(network.lss.WAITING_STATE)
+            self.network.lss.send_switch_state_global(self.network.lss.WAITING_STATE)
         except:
             pass
 

@@ -3,8 +3,12 @@ import concurrent.futures
 import threading
 import queue
 import json
+import logging
 
 """This module provides an abstraction to call function running in its own thread as if they were co routines"""
+
+logger = logging.getLogger("thread")
+logger.setLevel( logging.DEBUG )
 
 callbacks = {}
 
@@ -78,7 +82,7 @@ _q = queue.Queue()
 _t = threading.Thread(name="sync-world", target=cmd_reciev_worker)
 
 def start():
-    print("starting thread")
+    logger.info("Starting CAN thread")
     _t.start()
 
 

@@ -49,8 +49,6 @@ class Nodes:
 
     def show(self):
         for address, interface in self.nodes.items():
-            print("{}: {}".format(address, "Online" if interface["alive"] else "Offline" ))
-
             print("  Inputs:")
             for interface_input in interface["inputs"]:
                 print("    {}: {} Pins".format(interface_input["channel"], interface_input["pins"]))
