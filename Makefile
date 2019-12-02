@@ -18,7 +18,6 @@ clean:
 
 server: env
 	. $(PYTHON_VENV)/bin/activate && \
-	rm -rf $(SOCKET) && \
 	remotelab_canopen $(INTERFACE) --socket=$(SOCKET) $(args)
 
 client: env

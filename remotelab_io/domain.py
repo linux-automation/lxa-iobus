@@ -6,6 +6,7 @@ from . import service
 import logging
 
 import json
+import os
 
 import asyncio
 import concurrent.futures
@@ -213,6 +214,10 @@ service.api_mapping["set_output_masked"] = set_output_masked
 def main():
     import argparse
 
+    def remove_unix_socket():
+        if os.path.exists(unix_socket_path):
+            os.remove(unix_socket_path)
+
     parser = argparse.ArgumentParser(
         description='Control domain for ethmux, usw over CANOpen',
     )
@@ -250,6 +255,7 @@ def main():
     management = asyncio.ensure_future(bus_management(args.interface))
 
     try:
+        remove_unix_socket()
         ipc = service.startup_socket(unix_socket_path, loop)
     except OSError as e:
         logger.error("Could not setup communication socket: %s", e)
@@ -275,8 +281,9 @@ def main():
         loop.run_until_complete(management)
     except KeyboardInterrupt:
         logger.info("Strg+c recived")
+
     except OSError:
-        logger.exception("OSError")
+        logger.exception("OSError", exc_info=True)
 
     logger.info("Stopping async loop")
 
@@ -285,9 +292,9 @@ def main():
 
     try:
         loop.run_forever()
+
     finally:
-        import os
-        os.remove(unix_socket_path)
+        remove_unix_socket()
 
 
 if __name__ == "__main__":
