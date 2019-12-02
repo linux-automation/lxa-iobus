@@ -3,70 +3,112 @@ from . import thread
 
 def array2int(a):
     out = 0
+
     for i in range(len(a)):
-        out |= a[i]<<(i*8)
+        out |= a[i] << (i*8)
+
     return out
 
+
 def int2array4(c):
-    out = [0,]*4
+    out = [0]*4
+
     for i in range(4):
-        out[i] = 0xff & ( c>>(i*8))
+        out[i] = 0xff & (c >> (i*8))
+
     return out
 
 
 class Input:
     INDEX = 0x2101
+
     def __init__(self, address, channel):
         self.address = address
         self.channel = channel
 
     async def get_pin_count(self):
-        pin_count = await thread.cmd.upload(self.address, self.INDEX, (self.channel*2)+1)
+        pin_count = await thread.cmd.upload(
+            self.address,
+            self.INDEX,
+            (self.channel*2)+1,
+        )
+
         pin_count = array2int(pin_count)
         self.pins = pin_count
 
     async def read(self):
-        tmp = await thread.cmd.upload(self.address, self.INDEX, (self.channel*2+2))
+        tmp = await thread.cmd.upload(
+            self.address,
+            self.INDEX,
+            (self.channel*2+2),
+        )
+
         return array2int(tmp)
 
     def info(self):
-        return {"address": self.address, "channel": self.channel, "pins": self.pins}
+        return {
+            "address": self.address,
+            "channel": self.channel,
+            "pins": self.pins,
+        }
+
 
 class Output(Input):
     INDEX = 0x2100
+
     def __init__(self, address, channel):
         self.address = address
         self.channel = channel
         self.output_state = 0
 
     async def write(self, mask, data):
+        self.output_state = (self.output_state & (~mask)) | (data & mask)
+        data = int2array4(((mask & 0xffff) << 16) | (data & 0xffff))
 
-        self.output_state = (self.output_state & (~mask)) | ( data & mask)
-        data = int2array4(((mask&0xffff)<<16) | (data&0xffff))
-        await thread.cmd.download(self.address, self.INDEX, (self.channel*2+2), data)
+        await thread.cmd.download(
+            self.address,
+            self.INDEX,
+            (self.channel*2+2),
+            data,
+        )
 
     async def restore_state(self):
         await self.write(0xffff, self.output_state)
 
+
 class ADC:
     INDEX = 0x2adc
+
     def __init__(self, address, channel):
         self.address = address
         self.channel = channel
         self.scale = 1
 
     async def get_config(self):
-        scale = await thread.cmd.upload(self.address, self.INDEX, (self.channel*2)+1)
+        scale = await thread.cmd.upload(
+            self.address,
+            self.INDEX,
+            (self.channel*2)+1,
+        )
+
         scale = array2int(scale)
-        self.scale = ((0xffff0000&scale)>>16)/(scale&0xffff)
+        self.scale = ((0xffff0000 & scale) >> 16)/(scale & 0xffff)
 
     async def read(self):
-        tmp = await thread.cmd.upload(self.address, self.INDEX, (self.channel*2+2))
+        tmp = await thread.cmd.upload(
+            self.address,
+            self.INDEX,
+            (self.channel*2+2),
+        )
+
         return array2int(tmp)*self.scale
 
     def info(self):
-        return {"address": self.address, "channel": self.channel, "scale": self.scale}
-
+        return {
+            "address": self.address,
+            "channel": self.channel,
+            "scale": self.scale,
+        }
 
 
 class Node:
@@ -80,8 +122,8 @@ class Node:
     async def get_config(self):
         protocol_count = await thread.cmd.upload(self.address, 0x2000, 0)
         protocol_count = array2int(protocol_count)
-        
         protocols = []
+
         for i in range(protocol_count):
             tmp = await thread.cmd.upload(self.address, 0x2000, i+1)
             tmp = array2int(tmp)
@@ -97,7 +139,6 @@ class Node:
                 await channel.get_pin_count()
 
                 self.inputs.append(channel)
-
 
         # Outpus
         if 0x2100 in protocols:
@@ -122,17 +163,21 @@ class Node:
 
     def info(self):
         inputs = []
+        outputs = []
+        adcs = []
+
         for ch in self.inputs:
             inputs.append(ch.info())
 
-        outputs = []
         for ch in self.outputs:
             outputs.append(ch.info())
 
-        adcs = []
         for ch in self.adcs:
             adcs.append(ch.info())
 
-        return {"inputs": inputs, "outputs": outputs, "adcs": adcs, "alive": self.is_alive}
-
-
+        return {
+            "inputs": inputs,
+            "outputs": outputs,
+            "adcs": adcs,
+            "alive": self.is_alive,
+        }
