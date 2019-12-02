@@ -7,7 +7,7 @@ setup(
     version = "0.1.0",
     description = "CANOpen open control domain",
     packages = ["remotelab_io"],
-    install_requires = ["canopen"],
+    install_requires = ["canopen", "aiohttp"],
     entry_points = {
         'console_scripts': [
             'remotelab_canopen = remotelab_io.domain:main',
