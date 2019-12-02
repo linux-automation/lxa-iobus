@@ -1,18 +1,17 @@
-import socket
-import time
-import sys
-
-import json
 import collections
-
 import argparse
+import socket
+import json
+
 
 arg_epilog = """
 get 00000000.0c0ce935.534d0000.5c12ca96:Input-0,Input-0.1,Output-0.0,adc-0,Input-0.2,output-0
-"""
+"""  # NOQA
+
 
 class ServerException(Exception):
     pass
+
 
 class UnixSocketIPC:
     def __init__(self, path):
@@ -45,17 +44,19 @@ class UnixSocketIPC:
 class Nodes:
     def __init__(self, comm):
         nodes = comm.get_node_list()
-        self.nodes = collections.OrderedDict( sorted( nodes.items() ) )
+        self.nodes = collections.OrderedDict(sorted(nodes.items()))
 
     def show(self):
         for address, interface in self.nodes.items():
             print("  Inputs:")
             for interface_input in interface["inputs"]:
-                print("    {}: {} Pins".format(interface_input["channel"], interface_input["pins"]))
+                print("    {}: {} Pins".format(interface_input["channel"],
+                                               interface_input["pins"]))
 
             print("  Outputs:")
             for interface_output in interface["outputs"]:
-                print("    {}: {} Pins".format(interface_output["channel"], interface_output["pins"]))
+                print("    {}: {} Pins".format(interface_output["channel"],
+                                               interface_output["pins"]))
 
             print("  ADCs:")
             for interface_adc in interface["adcs"]:
@@ -68,19 +69,19 @@ class Nodes:
         if config["alive"]:
             return True
         return False
-    
+
 
 def get_state(comm, address, interface, channel):
     response = comm.get_channel_state(address, interface, channel)
     print("{}: {}, {}: {}".format(address, channel, interface, response))
 
+
 def set_output(comm, address, channel, mask, data):
-    response = comm.set_output_masked(address, channel, mask, data)
+    comm.set_output_masked(address, channel, mask, data)
+
 
 def parse(string):
-
     address, requests = string.split(":", 1)
-    
     requests = requests.split(",")
 
     channels_get = collections.OrderedDict()
@@ -89,7 +90,7 @@ def parse(string):
         interface, command = requ.split("-", 1)
         interface = interface.lower()
 
-        if not interface in ["input", "output", "adc"]:
+        if interface not in ["input", "output", "adc"]:
             raise Exception("{} is not a valid interface", interface)
 
         command = command.split("=", 1)
@@ -109,12 +110,13 @@ def parse(string):
             channel, pin = command
             channel, pin = int(channel), int(pin)
 
-
-        cmd = { "interface": interface,
-                "channel": int(channel),
-                "pin": pin,
-                "write": write,
-                "value": value}
+        cmd = {
+            "interface": interface,
+            "channel": int(channel),
+            "pin": pin,
+            "write": write,
+            "value": value,
+        }
 
         key = "{}:{}".format(channel, interface)
         if write:
@@ -128,6 +130,7 @@ def parse(string):
 
     return address, channels_get, channels_set
 
+
 def format_input(address, cmd, state):
     if cmd["pin"] == "all":
         print("{}:{}-{}={}".format(
@@ -136,13 +139,15 @@ def format_input(address, cmd, state):
             cmd["channel"],
             state))
     else:
-        pin_state = ( state & (1<<int(cmd["pin"])) ) != 0
+        pin_state = (state & (1 << int(cmd["pin"]))) != 0
         print("{}:{}-{}.{}={}".format(
             address,
             cmd["interface"],
             cmd["channel"],
             cmd["pin"],
             pin_state))
+
+
 def main():
     parser = argparse.ArgumentParser(
         epilog=arg_epilog,
@@ -197,7 +202,8 @@ def main():
         # Read data from node
         for _, cmds in sorted_cmd_get.items():
             cmd = cmds[0]
-            state = ipc.get_channel_state(address, cmd["channel"], cmd["interface"])
+            state = ipc.get_channel_state(address, cmd["channel"],
+                                          cmd["interface"])
             for cmd in cmds:
                 if cmd["interface"] in ["adc", "input", "output"]:
                     format_input(address, cmd, state)
@@ -212,13 +218,19 @@ def main():
                         mask = 0xffff
                         data = int(cmd["value"])
                     else:
-                        pin_mask = 1<<(int(cmd["pin"]))
+                        pin_mask = 1 << (int(cmd["pin"]))
                         mask |= pin_mask
                         value = cmd["value"]
 
-                        value = {'false': 0, 'true': 1, '0': 0, '1': 1}[value.lower()]
+                        value = {
+                            'false': 0,
+                            'true': 1,
+                            '0': 0,
+                            '1': 1,
+                        }[value.lower()]
 
-                        data = ( data & (~pin_mask) ) | ( value<<int(cmd["pin"]) )
+                        data = ((data & (~pin_mask)) |
+                                (value << int(cmd["pin"])))
                 else:
                     print("Can't write to {}:{}.{}".format(
                         cmd["interface"],
