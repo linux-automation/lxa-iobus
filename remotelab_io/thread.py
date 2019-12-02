@@ -1,3 +1,8 @@
+"""
+This module provides an abstraction to call function running in its own thread
+as if they were co routines
+"""
+
 import asyncio
 import concurrent.futures
 import threading
@@ -5,16 +10,15 @@ import queue
 import json
 import logging
 
-"""This module provides an abstraction to call function running in its own thread as if they were co routines"""
-
 logger = logging.getLogger("thread")
-logger.setLevel( logging.DEBUG )
+logger.setLevel(logging.DEBUG)
 
 callbacks = {}
 
+
 def add_call(name, pass_func=None):
     """Function or decorator to add function calls to the ipc"""
-    if isinstance(name, str): 
+    if isinstance(name, str):
         def decorator_add_call(func):
             callbacks[name] = func
             return func
@@ -23,15 +27,17 @@ def add_call(name, pass_func=None):
     func = name
     name = func.__name__
 
-    if not pass_func is None:
+    if pass_func is not None:
         name = pass_func
     callbacks[name] = func
 
     return func
 
+
 @add_call("echo")
 def echo(*args, **kwargs):
     return (args, kwargs)
+
 
 def callback_router(cmd, args):
     """Looks up a given command and calls it with args"""
@@ -44,7 +50,11 @@ def callback_router(cmd, args):
 
 
 def cmd_reciev_worker():
-    """This is the worker thread that take commands over a queue and returns the result via a future"""
+    """
+    This is the worker thread that take commands over a queue and returns the
+    result via a future
+    """
+
     while True:
         request, future = _q.get()
         if request is None:
@@ -55,8 +65,10 @@ def cmd_reciev_worker():
         try:
             res = callback_router(cmd, args)
             future.set_result(res)
+
         except BaseException as e:
             future.set_exception(e)
+
 
 async def send_cmd(cmd, *args):
     """Add a command to the command queue and awaits for it to finish"""
@@ -65,9 +77,10 @@ async def send_cmd(cmd, *args):
 
     request = json.dumps((cmd, args))
 
-    _q.put((request,fut))
+    _q.put((request, fut))
 
     return await future
+
 
 class Command():
     def __getattr__(self, name):
@@ -75,11 +88,11 @@ class Command():
             return await send_cmd(name, args, dicts)
         return tmp
 
+
 cmd = Command()
-
 _q = queue.Queue()
-
 _t = threading.Thread(name="sync-world", target=cmd_reciev_worker)
+
 
 def start():
     logger.info("Starting CAN thread")
@@ -89,4 +102,3 @@ def start():
 def stop():
     _q.put((None, 1))
     _t.join()
-
