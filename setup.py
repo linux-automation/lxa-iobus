@@ -9,7 +9,8 @@ setup(
     packages=find_packages(),
     install_requires=[
         'canopen',
-        'aiohttp',
+        'aiohttp-json-rpc==0.12.1',
+        'ipython<7',
     ],
     entry_points={
         'console_scripts': [
@@ -17,4 +18,7 @@ setup(
             'remotelab_canopen_cmd = remotelab_io.client:main'
         ]
     },
+    scripts=[
+        'bin/remotelab-io-server',
+    ],
 )

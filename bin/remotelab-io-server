@@ -1,0 +1,75 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from argparse import ArgumentParser
+import asyncio
+import logging
+import signal
+import os
+
+from aiohttp.web import Application, run_app
+
+from remotelab_io.server.server import RemoteLabIOServer
+
+# parse command line arguments
+parser = ArgumentParser()
+
+parser.add_argument('interface')
+parser.add_argument('--port', type=int, default=8080)
+parser.add_argument('--host', type=str, default='localhost')
+parser.add_argument('--shell', action='store_true')
+
+parser.add_argument(
+    '-l', '--log-level',
+    choices=['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'],
+    default='WARN',
+)
+
+args = parser.parse_args()
+
+# setup logging
+log_level = {
+    'DEBUG': logging.DEBUG,
+    'INFO': logging.INFO,
+    'WARN': logging.WARN,
+    'ERROR': logging.ERROR,
+    'FATAL': logging.FATAL,
+}[args.log_level]
+
+logging.basicConfig(level=log_level)
+
+# setup server
+loop = asyncio.get_event_loop()
+app = Application()
+server = RemoteLabIOServer(app, loop)
+
+if args.shell:
+    def _start_shell():
+        from traitlets.config import Config
+        import IPython
+
+        config = Config()
+
+        # this is needed to avoid sqlite errors while running in
+        # a multithreading environment
+        config.HistoryAccessor.enabled = False
+
+        IPython.embed(config=config)
+
+        # shutdown server
+        os.kill(os.getpid(), signal.SIGTERM)
+
+    loop.create_task(server.rpc.worker_pool.run(_start_shell))
+
+print('starting server on http://{}:{}/'.format(args.host, args.port))
+
+try:
+    run_app(app=app, host=args.host, port=args.port,
+            handle_signals=True, print=lambda *args, **kwargs: None)
+
+except OSError:
+    server.shutdown()
+    exit('ERROR: can not bind to port {}'.format(args.port))
+
+server.shutdown()
+print('\rshutting down server')

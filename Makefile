@@ -23,3 +23,23 @@ old-server: old_env
 old-client: old_env
 	. $(OLD_PYTHON_VENV)/bin/activate && \
 	remotelab_canopen_cmd -s $(SOCKET) $(args)
+
+
+PYTHON=python3.7
+PYTHON_VENV=env
+
+$(PYTHON_VENV)/.created: setup.py
+	rm -rf $(PYTHON_VENV) && \
+	$(PYTHON) -m venv $(PYTHON_VENV) && \
+	. $(PYTHON_VENV)/bin/activate && \
+	pip install -e . && \
+	date > $(PYTHON_VENV)/.created
+
+env: $(PYTHON_VENV)/.created
+
+clean:
+	rm -rf $(PYTHON_VENV)
+
+server: env
+	. $(PYTHON_VENV)/bin/activate && \
+	remotelab-io-server $(INTERFACE) $(args)
