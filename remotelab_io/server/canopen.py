@@ -312,27 +312,26 @@ class RemoteLabIOCanopenListener(canopen.network.MessageListener):
         # This is probably not needed
         self.network.nmt.state = "STOPPED"
 
-        while True:
-            found, lss_address = self.network.lss.fast_scan()
+        found, lss_address = self.network.lss.fast_scan()
 
-            if not found:
-                break
+        if not found:
+            return []
 
-            node_id = self.nodes.get_free_node_id(lss_address)
+        node_id = self.nodes.get_free_node_id(lss_address)
 
-            logger.debug(
-                "Found %x: [0x%x, 0x%x, 0x%x, 0x%x]",
-                node_id,
-                *lss_address
-            )
+        logger.debug(
+            "Found %x: [0x%x, 0x%x, 0x%x, 0x%x]",
+            node_id,
+            *lss_address
+        )
 
-            self.network.lss.configure_node_id(node_id)
+        self.network.lss.configure_node_id(node_id)
 
-            self.network.lss.send_switch_state_global(
-                self.network.lss.WAITING_STATE)
+        self.network.lss.send_switch_state_global(
+            self.network.lss.WAITING_STATE)
 
-            self.nodes.add_node(node_id, lss_address)
-            nodes_found.append(lss_to_node_adr(lss_address))
+        self.nodes.add_node(node_id, lss_address)
+        nodes_found.append(lss_to_node_adr(lss_address))
 
         # Start bus back up
         self.network.nmt.state = "OPERATIONAL"
