@@ -20,9 +20,10 @@ logger = logging.getLogger('RemoteLabIOServer')
 
 
 class RemoteLabIOServer:
-    def __init__(self, app, loop):
+    def __init__(self, app, loop, interface):
         self.app = app
         self.loop = loop
+        self.interface = interface
 
         self.state = {
             'low_level_nodes': {},
@@ -59,7 +60,7 @@ class RemoteLabIOServer:
         self.canopen_network = Network()
 
         setup_async(loop, self.canopen_listener, self.canopen_network,
-                    channel='can0', bustype='socketcan')
+                    channel=self.interface, bustype='socketcan')
 
         self.canopen_bus_worker_start()
         self.loop.create_task(self._canopen_bus_management())
@@ -197,7 +198,7 @@ class RemoteLabIOServer:
             except Exception as e:
                 future.set_exception(e)
 
-    async def _canopen_bus_management(self, interface="can0"):
+    async def _canopen_bus_management(self):
         """
         Search for new nodes and cleanup old ones.
         """
