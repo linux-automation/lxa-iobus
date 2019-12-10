@@ -12,6 +12,7 @@ from aiohttp.web import FileResponse, Response
 from aiohttp_json_rpc import JsonRpc
 
 from remotelab_io.server.canopen import RemoteLabIOCanopenListener, setup_async
+from remotelab_io.server.node_drivers import drivers
 from remotelab_io.server.nodes import Node
 
 STATIC_ROOT = os.path.join(os.path.dirname(__file__), 'static')
@@ -20,12 +21,14 @@ logger = logging.getLogger('RemoteLabIOServer')
 
 class RemoteLabIOServer:
     def __init__(self, app, loop):
-        self.state = {
-            'active_nodes': {},
-        }
-
         self.app = app
         self.loop = loop
+
+        self.state = {
+            'low_level_nodes': {},
+            'low_level_nodes_state': {},
+            'nodes': {}
+        }
 
         # setup aiohttp
         self.rpc = JsonRpc(loop=self.loop, max_workers=6)
@@ -43,12 +46,10 @@ class RemoteLabIOServer:
         self.app.router.add_route('*', '/rpc/', self.rpc)
 
         # rest api
-        app.router.add_route(
-            '*', '/nodes/{node}/{type}/{channel}/{pin}/', self.pin_read_write)
-
-        app.router.add_route('*', '/nodes/{node}/', self.get_node_info)
-
-        app.router.add_route('*', '/nodes/', self.get_nodes)
+        app.router.add_route('GET', '/nodes/{node}/pins/{pin}/', self.get_pin)
+        app.router.add_route('POST', '/nodes/{node}/pins/{pin}/', self.set_pin)
+        app.router.add_route('GET', '/nodes/{node}/pins/', self.get_pins)
+        app.router.add_route('GET', '/nodes/', self.get_nodes)
 
         # flush initial state
         self.loop.create_task(self.flush_state())
@@ -82,73 +83,81 @@ class RemoteLabIOServer:
         return FileResponse(path)
 
     async def get_nodes(self, request):
-        return Response(
-            text=json.dumps(list(self.state['active_nodes'].keys())))
-
-    async def get_node_info(self, request):
-        node = request.match_info['node']
-
-        if node not in self.state['active_nodes']:
-            return Response(text='{}')
-
-        return Response(
-            text=json.dumps(self.state['active_nodes'][node].info()))
-
-    async def pin_read_write(self, request):
         response = {
-            'return_code': 0,
-            'message': '',
-            'return_value': None,
+            'code': 0,
+            'error_message': '',
+            'result': list(self.state['nodes'].keys()),
         }
 
-        def gen_response():
-            return Response(text=json.dumps(response))
+        return Response(text=json.dumps(response))
+
+    async def get_pins(self, request):
+        response = {
+            'code': 0,
+            'error_message': '',
+            'result': [],
+        }
 
         try:
-            node = request.match_info['node']  # '00000000.0000049a.00000001.5a6ecbea'  # NOQA
-            type = request.match_info['type']  # 'input'
-            channel = int(request.match_info['channel'])  # '0'
-            pin = int(request.match_info['pin'])  # '0'
-
-            node = self.state['active_nodes'][node]
-            new_value = request.query.get('set', '')
-
-            if type not in ('inputs', 'outputs', 'adcs', ):
-                response['return_code'] = 1
-                response['message'] = 'invalid type'
-
-                return gen_response()
-
-            if new_value and not type == 'outputs':
-                response['return_code'] = 1
-                response['message'] = 'only outputs are writeable'
-
-                return gen_response()
-
-            # set
-            if new_value:
-                value = int(new_value) << pin
-                mask = 1 << pin
-
-                await node.outputs[channel].write(mask, value)
-
-            # get
-            if type == 'input':
-                channel_state = await node.inputs[channel].read()
-                response['return_value'] = (channel_state >> pin) & 1
-
-            elif type == 'outputs':
-                channel_state = await node.outputs[channel].read()
-                response['return_value'] = (channel_state >> pin) & 1
-
-            elif type == 'adcs':
-                response['return_value'] = await node.adcs[channel].read()
+            node = request.match_info['node']
+            response['result'] = list(self.state['nodes'][node].pins.keys())
 
         except Exception as e:
-            response['return_code'] = 1
-            response['message'] = str(e)
+            response = {
+                'code': 1,
+                'error_message': str(e),
+                'result': [],
+            }
 
-        return gen_response()
+        return Response(text=json.dumps(response))
+
+    async def get_pin(self, request):
+        response = {
+            'code': 0,
+            'error_message': '',
+            'result': None,
+        }
+
+        try:
+            node = request.match_info['node']
+            pin = request.match_info['pin']
+
+            response['result'] = \
+                await self.state['nodes'][node].pins[pin].read()
+
+        except Exception as e:
+            response = {
+                'code': 1,
+                'error_message': str(e),
+                'result': None,
+            }
+
+        return Response(text=json.dumps(response))
+
+    async def set_pin(self, request):
+        response = {
+            'code': 0,
+            'error_message': '',
+            'result': None,
+        }
+
+        try:
+            node = request.match_info['node']
+            pin = request.match_info['pin']
+            post = await request.post()
+            value = post['value']
+
+            response['result'] = \
+                await self.state['nodes'][node].pins[pin].write(int(value))
+
+        except Exception as e:
+            response = {
+                'code': 1,
+                'error_message': str(e),
+                'result': None,
+            }
+
+        return Response(text=json.dumps(response))
 
     # state (rpc) #############################################################
     async def flush_state(self):
@@ -201,7 +210,7 @@ class RemoteLabIOServer:
 
             for node in new_nodes:
                 logger.info("Found Node: %s", node)
-                node_config = self.state['active_nodes'].get(node, None)
+                node_config = self.state['low_level_nodes'].get(node, None)
 
                 if node_config is not None:
                     node_config.is_alive = True
@@ -219,14 +228,14 @@ class RemoteLabIOServer:
                         "Requesting the config from node %s failed", node)
 
                 finally:
-                    self.state['active_nodes'][node] = node_config
+                    self.state['low_level_nodes'][node] = node_config
                     logger.info("Node %s has been added", node)
 
             dead_nodes = await self.canopen_serialize(
                 self.canopen_listener.cleanup_old_nodes)
 
             for dead in dead_nodes:
-                node_config = self.state['active_nodes'].get(dead, None)
+                node_config = self.state['low_level_nodes'].get(dead, None)
 
                 if node_config is None:
                     continue
@@ -234,10 +243,18 @@ class RemoteLabIOServer:
                 node_config.is_alive = False
 
             # node infos
-            self.state['nodes'] = {}
+            self.state['low_level_nodes_state'] = {}
 
-            for address, node in self.state['active_nodes'].items():
-                self.state['nodes'][address] = node.info()
+            for address, node in self.state['low_level_nodes'].items():
+                self.state['low_level_nodes_state'][address] = node.info()
+
+                # find driver
+                for driver_class in drivers:
+                    if driver_class.match(node):
+                        driver = driver_class(node)
+                        self.state['nodes'][driver.get_name()] = driver
+
+                        break
 
             await self.flush_state()
             await asyncio.sleep(1)
