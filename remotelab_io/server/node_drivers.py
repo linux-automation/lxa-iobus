@@ -15,7 +15,7 @@ class Pin:
             pin_state = (channel_state >> self.bit) & 1
 
         elif self.pin_type == 'adc':
-            pin_state = await self.node.adcs[channel].read()
+            pin_state = await self.node.adcs[self.channel].read()
 
         return pin_state
 
