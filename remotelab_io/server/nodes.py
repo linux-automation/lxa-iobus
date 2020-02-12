@@ -57,7 +57,6 @@ class Input:
 
     def info(self):
         return {
-            "address": self.address,
             "channel": self.channel,
             "pins": self.pins,
         }
@@ -135,7 +134,6 @@ class ADC:
 
     def info(self):
         return {
-            "address": self.address,
             "channel": self.channel,
             "scale": self.scale,
         }
