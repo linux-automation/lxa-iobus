@@ -56,17 +56,35 @@ class NodeDriver:
 class IOMuxDriver(NodeDriver):
     def _get_pins(self):
         return {
-            'led-0': Pin(
+            'OUT0': Pin(
                 node=self.node,
                 pin_type='output',
                 channel=0,
                 bit=0,
             ),
-            'led-1': Pin(
+            'OUT1': Pin(
                 node=self.node,
                 pin_type='output',
                 channel=0,
                 bit=1,
+            ),
+            'OUT2': Pin(
+                node=self.node,
+                pin_type='output',
+                channel=0,
+                bit=2,
+            ),
+            'OUT3': Pin(
+                node=self.node,
+                pin_type='output',
+                channel=0,
+                bit=3,
+            ),
+            'LED': Pin(
+                node=self.node,
+                pin_type='output',
+                channel=0,
+                bit=4,
             ),
         }
 
