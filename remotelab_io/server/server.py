@@ -251,11 +251,18 @@ class RemoteLabIOServer:
 
                 # find driver
                 for driver_class in drivers:
-                    if driver_class.match(node):
-                        driver = driver_class(node)
-                        self.state['nodes'][driver.get_name()] = driver
+                    name = driver_class.match(node)
+                    if name is None:
+                        continue
 
+                    if name in self.state['nodes']:
+                        # we already have a driver for this node
                         break
+
+                    driver = driver_class(node)
+                    self.state['nodes'][name] = driver
+
+                    break
 
             await self.flush_state()
             await asyncio.sleep(1)

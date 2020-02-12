@@ -43,10 +43,7 @@ class NodeDriver:
     # public api ##############################################################
     @classmethod
     def match(cls, node):
-        return True
-
-    def get_name(self):
-        return self.node.address
+        return node.address
 
     def get_pins(self):
         return {}
@@ -56,12 +53,8 @@ class IOMuxDriver(NodeDriver):
     @classmethod
     def match(cls, node):
         if node.address.startswith('00000000.0000049a.00000001.'):
-            return True
-
-        return False
-
-    def get_name(self):
-        return 'IOMux-{}'.format(self.node.address.split('.')[-1])
+            return 'IOMux-{}'.format(node.address.split('.')[-1])
+        return None
 
     def get_pins(self):
         return {
