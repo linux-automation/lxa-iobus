@@ -87,7 +87,7 @@ class RemoteLabIOServer:
         response = {
             'code': 0,
             'error_message': '',
-            'result': list(self.state['nodes'].keys()),
+            'result': list(k for k, v in self.state['nodes'].items() if v.is_alive),
         }
 
         return Response(text=json.dumps(response))
