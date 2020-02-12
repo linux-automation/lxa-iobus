@@ -218,7 +218,7 @@ class RemoteLabIOServer:
 
                 if node_config is not None:
                     node_config.is_alive = True
-                    logger.info("New Node alread known")
+                    logger.info("New Node already known")
 
                     continue
 

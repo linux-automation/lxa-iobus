@@ -23,7 +23,7 @@ def lss_to_node_adr(lss):
 
 class CanNode():
     PASSIVE_TIMEOUT = 1
-    ACTIV_TIMEOUT = 5
+    ACTIVE_TIMEOUT = 5
 
     def __init__(self, lss_address, node_id, node):
         self._lss_address = lss_address
@@ -55,8 +55,8 @@ class CanNode():
         """Send request to node to check if its is still there"""
         try:
             self.node.sdo.upload(0x2000, 0)
-            # self.seen() # if this works we got a responce
-            # (this is to make sure is_alive() gets an uptodata age)
+            # self.seen() # if this works we got a response
+            # (this is to make sure is_alive() gets an up-to-date age)
 
             # FIXME seen() might not be needed here
         except canopen.sdo.exceptions.SdoCommunicationError:
@@ -64,14 +64,14 @@ class CanNode():
             pass
 
     def is_alive(self):
-        """If node has not been seen for ACTIV_TIMEOUT returns false"""
+        """If node has not been seen for ACTIVE_TIMEOUT returns false"""
         # Have we heard of the node?
         # if not send a request
         if self.age() > self.PASSIVE_TIMEOUT:
             self.poke_node()
 
         # Have we heard something after the requests?
-        if self.age() > self.ACTIV_TIMEOUT:
+        if self.age() > self.ACTIVE_TIMEOUT:
             return False
         return True
 
@@ -88,14 +88,14 @@ class CanNodes():
 
     def add_node(self, node_id, lss):
         """
-        If node does not exist its added a node_id lss mapping else update
+        If node does not exist its added a node_id LSS mapping else update
         mapping
         """
 
         if len(lss) != 4:
-            raise Exception("Not a valid LSS adresse")
+            raise Exception("Not a valid LSS address")
 
-        # Is this mapping already uptodate?
+        # Is this mapping already up-to-date?
         old_node_map = self.get_node_by_lss(lss)
         if old_node_map is not None:
             if old_node_map.node_id == node_id:
@@ -115,7 +115,7 @@ class CanNodes():
                 *lss
             )
 
-            # TODO this needs to be known by the Dirver to bring back
+            # TODO this needs to be known by the driver to bring back
             # the old state
             old_node_map.update_node_id(node_id)
         else:
@@ -124,7 +124,7 @@ class CanNodes():
             self.nodes.append(CanNode(lss, node_id, node))
 
     def get_free_node_id(self, lss):
-        """Returns an unused node id or None if none is awailable"""
+        """Returns an unused node id or None if none is available"""
         # Do we already know this node?
 
         node = self.get_node_by_lss(lss)
@@ -165,7 +165,7 @@ class CanNodes():
 
     def seen_node_id(self, node_id):
         """
-        Call when node_id has been seen on the bus. here to updata last seen
+        Call when node_id has been seen on the bus. here to update last seen
         """
 
         # TODO: Maybe this is overdoing it, maybe just send out requests
@@ -177,7 +177,7 @@ class CanNodes():
 
     def get_list(self):
         """
-        Retuns a list with a dict for every node on the bus containing its
+        Returns a list with a dict for every node on the bus containing its
         mapping and age
         """
 
@@ -191,7 +191,7 @@ class CanNodes():
         return out
 
     def cleanup_nodes(self):
-        """remove all node that have not been seen for ACTIV_TIMEOUT"""
+        """remove all node that have not been seen for ACTIVE_TIMEOUT"""
         dead_nodes = []
         for node in self.nodes:
             if not node.is_alive():
@@ -200,12 +200,12 @@ class CanNodes():
 
                 dead_nodes.append(node)
         for node in dead_nodes:
-            logger.info("Removeing %s", node.node_id)
+            logger.info("Removing %s", node.node_id)
             self.nodes.remove(node)
         return dead_nodes
 
     def upload(self, lss, index, subindex):
-        """SDO uploade. Node->Server"""
+        """SDO upload. Node->Server"""
         node = self.get_node_by_lss(lss)
         if node is None:
             raise Exception("No mapping for address: {}".format(lss))

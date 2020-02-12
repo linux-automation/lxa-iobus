@@ -180,7 +180,7 @@ class Node:
 
                 self.inputs.append(channel)
 
-        # Outpus
+        # Output
         if 0x2100 in protocols:
             channel_count = await canopen_serialize(
                 upload, self.address, 0x2100, 0)
