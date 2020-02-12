@@ -30,33 +30,31 @@ class NodeDriver:
     def __init__(self, node):
         self.node = node
 
-    @property
-    def pins(self):
-        if not hasattr(self, '_pins'):
-            self._pins = {}
-
-        if not self._pins:
-            self._pins = self.get_pins()
-
-        return self._pins
+    def _get_pins(self):
+        return {}
 
     # public api ##############################################################
     @classmethod
     def match(cls, node):
         return node.address
 
-    def get_pins(self):
-        return {}
+    @property
+    def pins(self):
+        if not hasattr(self, '_pins'):
+            self._pins = {}
+
+        if not self._pins:
+            self._pins = self._get_pins()
+
+        return self._pins
+
+    @property
+    def is_alive(self):
+        return self.node.is_alive
 
 
 class IOMuxDriver(NodeDriver):
-    @classmethod
-    def match(cls, node):
-        if node.address.startswith('00000000.0000049a.00000001.'):
-            return 'IOMux-{}'.format(node.address.split('.')[-1])
-        return None
-
-    def get_pins(self):
+    def _get_pins(self):
         return {
             'led-0': Pin(
                 node=self.node,
@@ -71,6 +69,12 @@ class IOMuxDriver(NodeDriver):
                 bit=1,
             ),
         }
+
+    @classmethod
+    def match(cls, node):
+        if node.address.startswith('00000000.0000049a.00000001.'):
+            return 'IOMux-{}'.format(node.address.split('.')[-1])
+        return None
 
 
 drivers = [
