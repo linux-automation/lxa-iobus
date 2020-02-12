@@ -104,6 +104,7 @@ class RemoteLabIOServer:
             response['result'] = list(self.state['nodes'][node].pins.keys())
 
         except Exception as e:
+            logger.exception("get_pins failed")
             response = {
                 'code': 1,
                 'error_message': str(e),
@@ -127,6 +128,7 @@ class RemoteLabIOServer:
                 await self.state['nodes'][node].pins[pin].read()
 
         except Exception as e:
+            logger.exception("get_pin failed")
             response = {
                 'code': 1,
                 'error_message': str(e),
@@ -152,6 +154,7 @@ class RemoteLabIOServer:
                 await self.state['nodes'][node].pins[pin].write(int(value))
 
         except Exception as e:
+            logger.exception("set_pin failed")
             response = {
                 'code': 1,
                 'error_message': str(e),
