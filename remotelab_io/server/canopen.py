@@ -1,4 +1,4 @@
-from time import time
+from time import monotonic
 import logging
 
 import canopen
@@ -29,7 +29,7 @@ class CanNode():
         self._lss_address = lss_address
         self._node_id = node_id
         self.node = node
-        self.last_seen = time()
+        self.last_seen = monotonic()
 
     @property
     def lss_address(self):
@@ -45,11 +45,11 @@ class CanNode():
         self.seen()
 
     def seen(self):
-        self.last_seen = time()
+        self.last_seen = monotonic()
 
     def age(self):
         """Time since last seen"""
-        return time() - self.last_seen
+        return monotonic() - self.last_seen
 
     def poke_node(self):
         """Send request to node to check if its is still there"""
