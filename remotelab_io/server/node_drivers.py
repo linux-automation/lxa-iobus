@@ -86,6 +86,48 @@ class IOMuxDriver(NodeDriver):
                 channel=0,
                 bit=4,
             ),
+            'IN4': Pin(
+                node=self.node,
+                pin_type='input',
+                channel=0,
+                bit=0,
+            ),
+            'IN5': Pin(
+                node=self.node,
+                pin_type='input',
+                channel=0,
+                bit=1,
+            ),
+            'IN6': Pin(
+                node=self.node,
+                pin_type='input',
+                channel=0,
+                bit=2,
+            ),
+            'AIN0': Pin(
+                node=self.node,
+                pin_type='adc',
+                channel=0,
+                bit=None,
+            ),
+            'AIN1': Pin(
+                node=self.node,
+                pin_type='adc',
+                channel=1,
+                bit=None,
+            ),
+            'AIN2': Pin(
+                node=self.node,
+                pin_type='adc',
+                channel=2,
+                bit=None,
+            ),
+            'VIN': Pin(
+                node=self.node,
+                pin_type='adc',
+                channel=3,
+                bit=None,
+            ),
         }
 
     @classmethod
