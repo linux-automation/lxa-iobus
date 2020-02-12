@@ -136,8 +136,50 @@ class IOMuxDriver(NodeDriver):
             return 'IOMux-{}'.format(node.address.split('.')[-1])
         return None
 
+class EthMuxDriver(NodeDriver):
+    def _get_pins(self):
+        return {
+            'SW': Pin(
+                node=self.node,
+                pin_type='output',
+                channel=0,
+                bit=0,
+            ),
+            'SW_IN': Pin(
+                node=self.node,
+                pin_type='input',
+                channel=0,
+                bit=0,
+            ),
+            'SW_EXT': Pin(
+                node=self.node,
+                pin_type='input',
+                channel=0,
+                bit=1,
+            ),
+            'AIN0': Pin(
+                node=self.node,
+                pin_type='adc',
+                channel=0,
+                bit=None,
+            ),
+            'VIN': Pin(
+                node=self.node,
+                pin_type='adc',
+                channel=1,
+                bit=None,
+            ),
+        }
+
+    @classmethod
+    def match(cls, node):
+        if node.address.startswith('00000000.0c0ce934.534d0000.'):
+            return 'EthMux-{}'.format(node.address.split('.')[-1])
+        return None
+
 
 drivers = [
     IOMuxDriver,
+    EthMuxDriver,
     NodeDriver,  # catch all
 ]
