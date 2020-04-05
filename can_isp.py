@@ -154,8 +154,8 @@ def isp_write(filename):
     stop_t = time.time()
     print("Write", len(data), "in", stop_t-start_t, ":", len(data)/(stop_t-start_t),"Bytes/sec")
 
-    #stack, reset = struct.unpack("II", data[0:8])
-    #print("Stack", stack, ", Rest", reset)
+    stack, reset = struct.unpack("II", data[0:8])
+    print("Stack", stack, ", Rest", reset)
     #isp.go(reset & 0xfffffffe)
 
 def isp_read(filename):
@@ -175,6 +175,19 @@ def isp_read(filename):
     print("Read", length, "in", stop_t-start_t, ":", length/(stop_t-start_t),"Bytes/sec")
     open(filename, "wb").write(data)
 
+def isp_exec(filename):
+    network = canopen.Network()
+    network.connect(channel='can0', bustype='socketcan')
+    node = network.add_node(125)
+    isp = CAN_ISP(node)
+
+    data = open(filename, "rb").read()
+
+    isp.unlock()
+    isp.write_to_ram(0x10000500, data)
+    isp.go(0x10000500)
+
+
 if __name__ == "__main__":
 
     if len(sys.argv) != 3:
@@ -184,6 +197,8 @@ if __name__ == "__main__":
         isp_read(sys.argv[2])
     if sys.argv[1] == "write":
         isp_write(sys.argv[2])
+    if sys.argv[1] == "exec":
+        isp_exec(sys.argv[2])
 
 def read_write():
 
