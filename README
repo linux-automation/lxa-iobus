@@ -1,0 +1,22 @@
+This is a Prototyp implementation.
+
+This python module provides accsess to the LPC11C24 CAN ISP.
+
+# Read firmware:
+ $python read filename
+
+# Write firmware:
+ $python read filename
+
+# Execute binary from RAM:
+ $python exec filename
+
+
+In loader you find two binary:
+ * reset.bin to reset the MCU after flashing the firmware
+ * soft_reset to jump into the application in flash
+   This is needed in case you jumpered the Boot0/Bootsel pin
+
+ $python exec loader/reset.bin
+ $python exec loader/soft_reset.bin
+
