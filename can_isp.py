@@ -2,124 +2,329 @@ import canopen
 import struct
 import sys
 import time
+import logging
 
-class CAN_ISP:
+class ExceptionCanIsp(Exception):
+    pass
+
+class IspSdoAbortedError(Exception):
+    abort_codes = {
+            0x0F00000D: "ADDR_ERROR",
+            0x0F00000E: "ADDR_ NOT_MAPPED",
+            0x0F00000F: "CMD_LOCKED",
+            0x0F000013: "CODE_READ_PROTECTION_ENABLED",
+            0x0F00000A: "COMPARE_ERROR",
+            0x0F000006: "COUNT_ERROR",
+            0x0F000003: "DST_ADDR_ERROR",
+            0x0F000005: "DST_ADDR_NOT_MAPPED",
+            0x0F000010: "INVALID_CODE",
+            0x0F000001: "INVALID_COMMAND",
+            0x0F000007: "INVALID_SECTOR",
+            0x0F00000C: "PARAM_ERROR",
+            0x0F000008: "SECTOR_ NOT_BLANK",
+            0x0F000009: "SECTOR_NOT_PREPARED_FOR_WRITE_OPERATION",
+            0x0F000002: "SRC_ADDR_ERROR",
+            0x0F000004: "SRC_ADDR_NOT_MAPPED"
+            }
+
+    def __init__(self, code):
+        self.code = code
+
+    @classmethod
+    def is_known(cls, code):
+        return code in cls.abort_codes
+
+    def str(self):
+        return self.abort_codes.get(self.code, None)
+
+    def __str__(self):
+        text = "Code 0x{:08X}".format(self.code)
+        reason = self.str()
+        if not reason is None:
+            text += ", " + reason
+        return text
+
+class IspCompareError(Exception):
+    def __init__(self, offset):
+        self.offset = offset
+
+    def __str__(self):
+        text = "Memory compare failed at 0x{:08X}".format(self.offset)
+        return text
+
+
+class CanIsp:
     DATA_SIZES = {8: "B", 16: "H", 32: "I"}
+    ram_offset = 0x10000500 # Offset to savely usable RAM
+
+    object_directory = {
+            "Device Type": [ 0x1000, 0, 32 ],
+            "Vendor ID": [ 0x1018, 1, 32 ], # Not used: should be 0
+            "Part Identification Number": [ 0x1018, 2, 32 ],
+            "Boot Code Version Number": [ 0x1018, 3, 32 ],
+            "Program Area": [ 0x1F50, 1, None ], #DOMAIN
+            "Program Control": [ 0x1F51, 1, 8 ],
+            "Unlock Code": [ 0x5000, 0, 16 ],
+
+            "Memory Read Address": [ 0x5010, 0, 32 ],
+            "Memory Read Length": [ 0x5011, 0, 32 ],
+
+            "RAM Write Address": [ 0x5015, 0, 32 ],
+
+            "Prepare Sectors for Write": [ 0x5020, 0, 16 ],
+            "Erase Sectors": [ 0x5030, 0, 16 ],
+
+            "Check sectors": [ 0x5040, 1, 16 ],
+
+            "Copy Flash Address": [ 0x5050, 2, 32 ],
+            "Copy RAM Address": [ 0x5050, 3, 32 ],
+            "Copy Length": [ 0x5050, 4, 16 ],
+
+            "Compare Address 1": [ 0x5060, 1, 32 ],
+            "Compare Address 2": [ 0x5060, 2, 32 ],
+            "Compare Length": [ 0x5060, 3, 16 ],
+            "Compare mismatch": [ 0x5060, 4, 32 ],
+            "Execution Address": [ 0x5070, 1, 32 ],
+            "Serial Number 1": [ 0x5100, 1, 32 ],
+            "Serial Number 2": [ 0x5100, 2, 32 ],
+            "Serial Number 3": [ 0x5100, 3, 32 ],
+            "Serial Number 4": [ 0x5100, 4, 32 ]
+            }
+
+    part_ids = {
+            0x041E502B: "LPC1111FHN33/101",
+            0x2516D02B: "LPC1111FHN33/101",
+            0x2516D02B: "LPC1111FHN33/102",
+            0x0416502B: "LPC1111FHN33/201",
+            0x2516902B: "LPC1111FHN33/201",
+            0x2516902B: "LPC1111FHN33/202",
+            0x00010013: "LPC1111FHN33/103",
+            0x00010012: "LPC1111FHN33/203",
+            0x042D502B: "LPC1112FHN33/101",
+            0x2524D02B: "LPC1112FHN33/101",
+            0x2524D02B: "LPC1112FHN33/102",
+            0x0425502B: "LPC1112FHN33/201",
+            0x2524902B: "LPC1112FHN33/201",
+            0x2524902B: "LPC1112FHN33/202",
+            0x2524902B: "LPC1112FHI33/202",
+            0x00020023: "LPC1112FHN33/103",
+            0x00020022: "LPC1112FHN33/203",
+            0x00020022: "LPC1112FHI33/203",
+            0x0434502B: "LPC1113FHN33/201",
+            0x2532902B: "LPC1113FHN33/201",
+            0x2532902B: "LPC1113FHN33/202",
+            0x0434102B: "LPC1113FHN33/301",
+            0x2532102B: "LPC1113FHN33/301",
+            0x2532102B: "LPC1113FHN33/302",
+            0x0434102B: "LPC1113FBD48/301",
+            0x2532102B: "LPC1113FBD48/301",
+            0x2532102B: "LPC1113FBD48/302",
+            0x00030030: "LPC1113FBD48/303",
+            0x00030032: "LPC1113FHN33/203",
+            0x00030030: "LPC1113FHN33/303",
+            0x0444502B: "LPC1114FHN33/201",
+            0x2540902B: "LPC1114FHN33/201",
+            0x2540902B: "LPC1114FHN33/202",
+            0x0444102B: "LPC1114FHN33/301",
+            0x2540102B: "LPC1114FHN33/301",
+            0x2540102B: "LPC1114FHN33/302",
+            0x2540102B: "LPC1114FHI33/302",
+            0x0444102B: "LPC1114FBD48/301",
+            0x2540102B: "LPC1114FBD48/301",
+            0x2540102B: "LPC1114FBD48/302",
+            0x00040040: "LPC1114FBD48/303",
+            0x00040042: "LPC1114FHN33/203",
+            0x00040040: "LPC1114FHN33/303",
+            0x00040060: "LPC1114FBD48/323",
+            0x00040070: "LPC1114FBD48/333",
+            0x00040070: "LPC1114FHN33/333",
+            0x00040040: "LPC1114FHI33/303",
+            0x2540102B: "LPC11D14FBD100/302",
+            0x00050080: "LPC1115FBD48/303",
+            0x1421102B: "LPC11C12FBD48/301",
+            0x1440102B: "LPC11C14FBD48/301",
+            0x1431102B: "LPC11C22FBD48/301",
+            0x1430102B: "LPC11C24FBD48/301"
+            }
+
     def __init__(self, node):
         self.node = node
 
     @staticmethod
-    def unpack(size, data):
-        form = CAN_ISP.DATA_SIZES[size]
-        return struct.unpack(form, data)
+    def unpack(data: bytes, size:int = None):
+        """converts binary data to in depending on number of bits"""
+        if size is None:
+            return data
+
+        form = CanIsp.DATA_SIZES[size]
+        return struct.unpack(form, data)[0]
 
     @staticmethod
     def pack(data, size=None):
+        """converts ints to binary"""
         if size is None:
             return data
-        form = CAN_ISP.DATA_SIZES[size]
+        form = CanIsp.DATA_SIZES[size]
         return struct.pack(form, data)
 
-    def send(self, index: int, subindex: int, size, num: int):
-        self.node.sdo.download(index, subindex, self.pack(num, size=size))
+    def _send(self, index: int, subindex: int, size, num: int):
+        """Sends data to the MCU and converts it"""
+        try:
+            self.node.sdo.download(index, subindex, self.pack(num, size=size))
+        except canopen.sdo.exceptions.SdoAbortedError as e:
+            if IspSdoAbortedError.is_known(e.code):
+                raise IspSdoAbortedError(e.code)
+            raise e
+
+    def send(self, name, value):
+        self._send(*self.object_directory[name], value)
+
+    def _get(self, index: int, subindex: int, size):
+        """Gets data from the MCU and converts it"""
+        try:
+            return self.unpack(self.node.sdo.upload(index, subindex), size)
+        except canopen.sdo.exceptions.SdoAbortedError as e:
+            if IspSdoAbortedError.is_known(e.code):
+                raise IspSdoAbortedError(e.code)
+            raise e
+
+    def get(self, name):
+        return self._get(*self.object_directory[name])
 
     def unlock(self):
-        """Unlocks write to flash"""
-        self.send(0x5000, 0, 16, 23130)
+        """Unlocks write operations"""
+        """Needs to be called befor writing to RAM or Flash"""
+        self.send("Unlock Code",  23130)
 
     def write_to_ram(self, addr: int, data: bytes):
         """Writes data to RAM at addr"""
         # TODO: Check if we override the bootloader area
         # TODO: Check RAM Size
-        self.send(0x5015, 0, 32, addr)
-#        self.node.sdo.open(0x1F50, 1, "wb").write(data)
-        self.send(0x1F50, 1, None, data)
+        self.send("RAM Write Address", addr)
+        self.send("Program Area", data)
     
-    def prepare_flash_sectors(self, start, stop):
-        """Prepare sectors for write operation"""
-        # TODO: Check for allingement
-        self.send(0x5020, 0, 16, ( (start&0xff) | ((stop&0xff)<<8) ) )
+    def prepare_flash_sectors(self, start: int, stop: int):
+        """Prepare sectors for write operation."""
+        """Sectors are always 4kByte so sector 0 is address 0x0000_0000 - 0x0000_0FFF and so on."""
+        """The sectro range is inclusiv so prepare_flash_sectors(0, 0) prepares the first sector."""
+        if stop > start:
+            raise ExceptionCanIsp("Sector range not ascending")
+
+        if start > 8 or stop > 8:
+            raise ExceptionCanIsp("Sector out of range")
+
+        self.send("Prepare Sectors for Write", ( (start&0xff) | ((stop&0xff)<<8) ) )
 
     def copy_ram_to_flash(self, ram_addr, flash_addr, length):
         """Copies RAM range to flash"""
         # TODO: Check for allingement
         # TODO: Check FLASH size
-        self.send(0x5050, 1, 32, flash_addr )
-        self.send(0x5050, 2, 32, ram_addr )
-        self.send(0x5050, 3, 16, length )
+        self.send("Copy Flash Address", flash_addr )
+        self.send("Copy RAM Address", ram_addr )
+        self.send("Copy Length", length )
 
     def go(self, addr):
         """Jumps to given addresse"""
-        self.send(0x5070, 1, 32, addr)
-        self.send(0x1f51, 1, 8, 1)
+        self.send("Execution Address", addr)
+        self.send("Program Control", 1) # Trigger jump
 
     def erase_flash_secotrs(self, start, stop):
         """Clear given flash range"""
-        # TODO: Check for allingement
-        self.send(0x5030, 0, 16, ( (start&0xff) | ((stop&0xff)<<8) ) )
+        if stop > start:
+            raise ExceptionCanIsp("Sector range not ascending")
+
+        if start > 8 or stop > 8:
+            raise ExceptionCanIsp("Sector out of range")
+
+        self.send("Erase Sectors", ( (start&0xff) | ((stop&0xff)<<8) ) )
 
 
     def read_memory(self, addr: int, length: int) -> bytes:
-        self.send(0x5010, 0, 32, addr)
-        self.send(0x5011, 0, 32, length)
-        return self.node.sdo.upload(0x1F50, 1)
+        """Dumps part of the MCUs memory"""
+        self.send("Memory Read Address", addr)
+        self.send("Memory Read Length", length)
+        return self.get("Program Area")
 
     def read_partID(self) -> int:
-        raise NotImplementedError
-        #[0x1018, 2] 32
+        """Returns a tuple with the part id and the part name if known otherwise None"""
+        part_id = self.get("Part Identification Number")
+        part_name = self.part_ids.get(part_id, None)
+        return (part_id, part_name)
 
     def read_bootloader_version(self) -> int:
-        raise NotImplementedError
-        #[0x1018, 3] 32
+        """Returns bootloader version as an 32-bit unsigned integers"""
+        return self.get("Boot Code Version Number")
 
-    def read_serial_number(self) -> int:
-        raise NotImplementedError
-        #[0x5100, 1 to 4] 32
+    def read_serial_number(self) -> [int]:
+        """returns MCU serial number as an array with 4 32-bit unsigned integers"""
+        uid = [0,0,0,0]
+        uid[0] = self.get("Serial Number 1")
+        uid[1] = self.get("Serial Number 2")
+        uid[2] = self.get("Serial Number 3")
+        uid[3] = self.get("Serial Number 4")
+        return uid
 
-    def read_device_type(self) -> str:
-        raise NotImplementedError
-        #[0x1000, 0] 32 (ASCII)
+    def read_device_type(self) -> bytes:
+        """The device type should always be 'LPC1'"""
+        obj = self.object_directory["Device Type"]
+        return self._get(obj[0], obj[1], None) # Get uint32 as bytearray
 
     def compare(self, addr_1, addr_2, lenght):
-        raise NotImplementedError
+        """Takes two addresses and a lengt and compare the data"""
+        """Raises IspCompareError if a mismatch is found"""
+        try:
+            self.send("Compare Address 1", addr_1 )
+            self.send("Compare Address 2", addr_2 )
+            self.send("Compare Length", lenght )
+        except IspSdoAbortedError as e:
+            if e.str() == "COMPARE_ERROR":
+                offset = self.get("Compare mismatch")
+                raise IspCompareError(offset)
 
 
     def flash_image(self, data):
-        print("Data to be writen:", len(data), "Byte")
+        logging.info("Data to be writen: %d Byte", len(data))
 
-        block_size = 4096
+        block_size = 4096 
         
         #data must be multiple of 4
+        # TODO add option for smaller block size
+        #      Supporte are: 256, 512, 1024, 4096.
         stuffing = len(data)%block_size
         if stuffing != 0:
-            print("Data is extended by", stuffing)
+            logging.info("Date buffer is extended by", stuffing)
             data += b"\xff"*(block_size-stuffing)
 
-        print("Data to be writen:", len(data), "Byte")
+        logging.info("Data to be writen %d Bytes", len(data))
 
         sectors = len(data)//block_size
         if (len(data)%block_size) != 0:
-            print(" # need to erease extra sector to fit data")
+            # This should not happen as we extended the data buffer to fit in howl sections
+            logging.error("Need to erease extra sector to fit date: %d", len(data))
             sectors += 1
-        print("need to erase", sectors, "sectors")
-        self.unlock()
+
+        # TODO: Add check if we need to erease block use Blank check sectors
+        logging.info("Ereasing blocks %d to %d", 0, setors-1)
+        self.unlock() # Unlock writes
         self.prepare_flash_sectors(0, sectors-1)
         self.erase_flash_secotrs(0, sectors-1)
 
-        for block_num in range(sectors):
-            print("# Send block", block_num)
-            i = block_size*block_num
+        blocks = sectors
 
-            block = data[i:i+block_size]
-            print(" #Block length", len(block))
-            self.write_to_ram(0x10000500, block)
 
-            print("  Copy to flash")
+        for block_num in range(blocks):
+            logging.debug("Send block", block_num)
+
+            start_offset = block_size*block_num
+
+            block = data[start_offset: start_offset + block_size]
+            logging.debug("Block length", len(block))
+            self.write_to_ram(self.ram_offset, block) # Transfer data block to the RAM of the MCU
+
+            logging.debug("Copy to Flash")
             self.prepare_flash_sectors(block_num, block_num)
-            self.copy_ram_to_flash(0x10000500, i, block_size)
+            self.copy_ram_to_flash(self.ram_offset, start_offset, block_size) # Copy block from MCU RAM to MCU Flash
 
-
-# 
 
 def fix_checksum(data):
     """This generate the checksum in the vectro table"""
@@ -136,17 +341,15 @@ def fix_checksum(data):
     data = data[0:4*7] + checksum + data[4*8:]
     return data
 
+def isp_info(node):
+    print("device_type:", isp.read_device_type())
+    print("partID: 0x{:08X} {}".format(*isp.read_partID()))
+    print("serial_number: {:08X} {:08X} {:08X} {:08X}".format(*isp.read_serial_number()))
+    print("bootloader_version: {:08X}".format( isp.read_bootloader_version()))
 
-
-def isp_write(filename):
+def isp_write(isp, filename):
     data = open(filename, "rb").read()
-
     data = fix_checksum(data)
-
-    network = canopen.Network()
-    network.connect(channel='can0', bustype='socketcan')
-    node = network.add_node(125)
-    isp = CAN_ISP(node)
 
     print("Writing new Image")
     start_t = time.time()
@@ -154,17 +357,7 @@ def isp_write(filename):
     stop_t = time.time()
     print("Write", len(data), "in", stop_t-start_t, ":", len(data)/(stop_t-start_t),"Bytes/sec")
 
-    stack, reset = struct.unpack("II", data[0:8])
-    print("Stack", stack, ", Rest", reset)
-    #isp.go(reset & 0xfffffffe)
-
-def isp_read(filename):
-    network = canopen.Network()
-    network.connect(channel='can0', bustype='socketcan')
-    node = network.add_node(125)
-    isp = CAN_ISP(node)
-
-
+def isp_read(isp, filename):
     print("Reading old Image")
     start_t = time.time()
 
@@ -175,12 +368,7 @@ def isp_read(filename):
     print("Read", length, "in", stop_t-start_t, ":", length/(stop_t-start_t),"Bytes/sec")
     open(filename, "wb").write(data)
 
-def isp_exec(filename):
-    network = canopen.Network()
-    network.connect(channel='can0', bustype='socketcan')
-    node = network.add_node(125)
-    isp = CAN_ISP(node)
-
+def isp_exec(isp, filename):
     data = open(filename, "rb").read()
 
     isp.unlock()
@@ -189,51 +377,19 @@ def isp_exec(filename):
 
 
 if __name__ == "__main__":
-
     if len(sys.argv) != 3:
         print(" tool.py [read | write] file")
-
-    if sys.argv[1] == "read":
-        isp_read(sys.argv[2])
-    if sys.argv[1] == "write":
-        isp_write(sys.argv[2])
-    if sys.argv[1] == "exec":
-        isp_exec(sys.argv[2])
-
-def read_write():
 
     network = canopen.Network()
     network.connect(channel='can0', bustype='socketcan')
     node = network.add_node(125)
-    isp = CAN_ISP(node)
+    isp = CanIsp(node)
+    
+    isp_info(isp)
 
-
-    isp.write_to_ram(0x10000300, b"asdfasdf")
-
-    print("Reading old Image")
-    start_t = time.time()
-
-    length = 32*1024
-    data = isp.read_memory(0, length)
-
-    stop_t = time.time()
-    print("Read", length, "in", stop_t-start_t, ":", length/(stop_t-start_t),"Bytes/sec")
-    open("pre_update.bin", "wb").write(data)
-
-    data = open("test.bin", "rb").read()
-
-    print("Writing new Image")
-    start_t = time.time()
-    isp.flash_image(data)
-    stop_t = time.time()
-    print("Write", length, "in", stop_t-start_t, ":", length/(stop_t-start_t),"Bytes/sec")
-
-    print("Reading new Image")
-    start_t = time.time()
-
-    length = 32*1024
-    data = isp.read_memory(0, length)
-
-    stop_t = time.time()
-    print("Read", length, "in", stop_t-start_t, ":", length/(stop_t-start_t),"Bytes/sec")
-    open("post_update.bin", "wb").write(data)
+    if sys.argv[1] == "read":
+        isp_read(isp, sys.argv[2])
+    if sys.argv[1] == "write":
+        isp_write(isp, sys.argv[2])
+    if sys.argv[1] == "exec":
+        isp_exec(isp, sys.argv[2])
