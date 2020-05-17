@@ -13,7 +13,7 @@ pip install canopen
  $python can_isp.py read filename
 
 # Write firmware:
- $python can_isp.py read filename
+ $python can_isp.py write filename
 
 # Execute binary from RAM:
  $python can_isp.py exec filename
