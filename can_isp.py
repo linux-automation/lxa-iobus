@@ -304,7 +304,7 @@ class CanIsp:
             sectors += 1
 
         # TODO: Add check if we need to erease block use Blank check sectors
-        logging.info("Ereasing blocks %d to %d", 0, setors-1)
+        logging.info("Ereasing blocks %d to %d", 0, sectors-1)
         self.unlock() # Unlock writes
         self.prepare_flash_sectors(0, sectors-1)
         self.erase_flash_secotrs(0, sectors-1)
