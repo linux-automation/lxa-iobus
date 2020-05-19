@@ -76,9 +76,9 @@ class CanIsp:
 
             "Check sectors": [ 0x5040, 1, 16 ],
 
-            "Copy Flash Address": [ 0x5050, 2, 32 ],
-            "Copy RAM Address": [ 0x5050, 3, 32 ],
-            "Copy Length": [ 0x5050, 4, 16 ],
+            "Copy Flash Address": [ 0x5050, 1, 32 ],
+            "Copy RAM Address": [ 0x5050, 2, 32 ],
+            "Copy Length": [ 0x5050, 3, 16 ],
 
             "Compare Address 1": [ 0x5060, 1, 32 ],
             "Compare Address 2": [ 0x5060, 2, 32 ],
@@ -207,7 +207,7 @@ class CanIsp:
         """Prepare sectors for write operation."""
         """Sectors are always 4kByte so sector 0 is address 0x0000_0000 - 0x0000_0FFF and so on."""
         """The sectro range is inclusiv so prepare_flash_sectors(0, 0) prepares the first sector."""
-        if stop > start:
+        if stop < start:
             raise ExceptionCanIsp("Sector range not ascending")
 
         if start > 8 or stop > 8:
@@ -230,7 +230,7 @@ class CanIsp:
 
     def erase_flash_secotrs(self, start, stop):
         """Clear given flash range"""
-        if stop > start:
+        if stop < start:
             raise ExceptionCanIsp("Sector range not ascending")
 
         if start > 8 or stop > 8:
@@ -292,7 +292,7 @@ class CanIsp:
         #      Supporte are: 256, 512, 1024, 4096.
         stuffing = len(data)%block_size
         if stuffing != 0:
-            logging.info("Date buffer is extended by", stuffing)
+            logging.info("Date buffer is extended by %d", stuffing)
             data += b"\xff"*(block_size-stuffing)
 
         logging.info("Data to be writen %d Bytes", len(data))
@@ -313,12 +313,12 @@ class CanIsp:
 
 
         for block_num in range(blocks):
-            logging.debug("Send block", block_num)
+            logging.debug("Send block %d", block_num)
 
             start_offset = block_size*block_num
 
             block = data[start_offset: start_offset + block_size]
-            logging.debug("Block length", len(block))
+            logging.debug("Block length %d", len(block))
             self.write_to_ram(self.ram_offset, block) # Transfer data block to the RAM of the MCU
 
             logging.debug("Copy to Flash")
