@@ -3,6 +3,7 @@ import struct
 import sys
 import time
 import logging
+logging.basicConfig(level=logging.DEBUG)
 
 class ExceptionCanIsp(Exception):
     pass
@@ -10,7 +11,7 @@ class ExceptionCanIsp(Exception):
 class IspSdoAbortedError(Exception):
     abort_codes = {
             0x0F00000D: "ADDR_ERROR",
-            0x0F00000E: "ADDR_ NOT_MAPPED",
+            0x0F00000E: "ADDR_NOT_MAPPED",
             0x0F00000F: "CMD_LOCKED",
             0x0F000013: "CODE_READ_PROTECTION_ENABLED",
             0x0F00000A: "COMPARE_ERROR",
@@ -21,7 +22,7 @@ class IspSdoAbortedError(Exception):
             0x0F000001: "INVALID_COMMAND",
             0x0F000007: "INVALID_SECTOR",
             0x0F00000C: "PARAM_ERROR",
-            0x0F000008: "SECTOR_ NOT_BLANK",
+            0x0F000008: "SECTOR_NOT_BLANK",
             0x0F000009: "SECTOR_NOT_PREPARED_FOR_WRITE_OPERATION",
             0x0F000002: "SRC_ADDR_ERROR",
             0x0F000004: "SRC_ADDR_NOT_MAPPED"
@@ -192,8 +193,8 @@ class CanIsp:
         return self._get(*self.object_directory[name])
 
     def unlock(self):
-        """Unlocks write operations"""
-        """Needs to be called befor writing to RAM or Flash"""
+        """Unlocks write operations
+        Needs to be called befor writing to RAM or Flash"""
         self.send("Unlock Code",  23130)
 
     def write_to_ram(self, addr: int, data: bytes):
@@ -202,11 +203,13 @@ class CanIsp:
         # TODO: Check RAM Size
         self.send("RAM Write Address", addr)
         self.send("Program Area", data)
-    
+
     def prepare_flash_sectors(self, start: int, stop: int):
-        """Prepare sectors for write operation."""
-        """Sectors are always 4kByte so sector 0 is address 0x0000_0000 - 0x0000_0FFF and so on."""
-        """The sectro range is inclusiv so prepare_flash_sectors(0, 0) prepares the first sector."""
+        """
+        Prepare sectors for write operation.
+        Sectors are always 4kByte so sector 0 is address 0x0000_0000 - 0x0000_0FFF and so on.
+        The sector range is inclusive so prepare_flash_sectors(0, 0) prepares the first sector.
+        """
         if stop < start:
             raise ExceptionCanIsp("Sector range not ascending")
 
@@ -217,7 +220,7 @@ class CanIsp:
 
     def copy_ram_to_flash(self, ram_addr, flash_addr, length):
         """Copies RAM range to flash"""
-        # TODO: Check for allingement
+        # TODO: Check for alignment
         # TODO: Check FLASH size
         self.send("Copy Flash Address", flash_addr )
         self.send("Copy RAM Address", ram_addr )
@@ -270,8 +273,10 @@ class CanIsp:
         return self._get(obj[0], obj[1], None) # Get uint32 as bytearray
 
     def compare(self, addr_1, addr_2, lenght):
-        """Takes two addresses and a lengt and compare the data"""
-        """Raises IspCompareError if a mismatch is found"""
+        """
+        Takes two addresses and a lengt and compare the data.
+        Raises IspCompareError if a mismatch is found.
+        """
         try:
             self.send("Compare Address 1", addr_1 )
             self.send("Compare Address 2", addr_2 )
@@ -285,8 +290,8 @@ class CanIsp:
     def flash_image(self, data):
         logging.info("Data to be writen: %d Byte", len(data))
 
-        block_size = 4096 
-        
+        block_size = 4096
+
         #data must be multiple of 4
         # TODO add option for smaller block size
         #      Supporte are: 256, 512, 1024, 4096.
@@ -304,7 +309,7 @@ class CanIsp:
             sectors += 1
 
         # TODO: Add check if we need to erease block use Blank check sectors
-        logging.info("Ereasing blocks %d to %d", 0, sectors-1)
+        logging.info("Erasing blocks %d to %d", 0, sectors-1)
         self.unlock() # Unlock writes
         self.prepare_flash_sectors(0, sectors-1)
         self.erase_flash_secotrs(0, sectors-1)
@@ -327,10 +332,12 @@ class CanIsp:
 
 
 def fix_checksum(data):
-    """This generate the checksum in the vectro table"""
-    """This is needed for the LPC11CXX und probebly all Cortex-M0"""
-    """and is normaly done somewhere in the swd programming chain"""
-    """For more info see: UM10398 26.3.3 Criterion for Valid User Code"""
+    """
+    This generate the checksum in the vectro table.
+    This is needed for the LPC11CXX und probebly all Cortex-M0.
+    and is normaly done somewhere in the swd programming chain.
+    For more info see: UM10398 26.3.3 Criterion for Valid User Code.
+    """
 
     vector_table = data[0:4*7] # First 7 entrys
     vector_table = struct.unpack("iiiiiii", vector_table)
@@ -384,7 +391,7 @@ if __name__ == "__main__":
     network.connect(channel='can0', bustype='socketcan')
     node = network.add_node(125)
     isp = CanIsp(node)
-    
+
     isp_info(isp)
 
     if sys.argv[1] == "read":
