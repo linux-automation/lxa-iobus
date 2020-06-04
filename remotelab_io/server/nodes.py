@@ -114,17 +114,17 @@ class ADC:
             upload,
             self.address,
             self.INDEX,
-            ((self.channel+1)<<2)+1,
+            ((self.channel+1)<<2)+2,
         )
-        scale = struct.unpack( "<i", scale)[0]
+        scale = struct.unpack( "<f", scale)[0]
 
         offset = await canopen_serialize(
             upload,
             self.address,
             self.INDEX,
-            ((self.channel+1)<<2)+2,
+            ((self.channel+1)<<2)+1,
         )
-        offset = struct.unpack( "<f", offset)[0]
+        offset = struct.unpack( "<i", offset)[0]
 
         self.offset = offset
         self.scale = scale
