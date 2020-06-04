@@ -1,3 +1,5 @@
+import struct
+
 def array2int(a):
     out = 0
 
@@ -100,6 +102,7 @@ class ADC:
         self.channel = channel
         self.server = server
         self.scale = 1
+        self.offset = 0
 
     async def get_config(self):
         # FIXME: we need better architecture here!
@@ -111,11 +114,20 @@ class ADC:
             upload,
             self.address,
             self.INDEX,
-            (self.channel*2)+1,
+            ((self.channel+1)<<2)+1,
         )
+        scale = struct.unpack( "<i", scale)[0]
 
-        scale = array2int(scale)
-        self.scale = ((0xffff0000 & scale) >> 16)/(scale & 0xffff)
+        offset = await canopen_serialize(
+            upload,
+            self.address,
+            self.INDEX,
+            ((self.channel+1)<<2)+2,
+        )
+        offset = struct.unpack( "<f", offset)[0]
+
+        self.offset = offset
+        self.scale = scale
 
     async def read(self):
         # FIXME: we need better architecture here!
@@ -127,15 +139,18 @@ class ADC:
             upload,
             self.address,
             self.INDEX,
-            (self.channel*2+2),
+            ((self.channel+1)<<2),
         )
 
-        return array2int(tmp)*self.scale
+        tmp = struct.unpack( "<H", tmp)[0]
+
+        return (tmp+self.offset)*self.scale
 
     def info(self):
         return {
             "channel": self.channel,
             "scale": self.scale,
+            "offset": self.offset,
         }
 
 
@@ -196,7 +211,7 @@ class Node:
             channel_count = await canopen_serialize(
                 upload, self.address, 0x2adc, 0)
 
-            channel_count = int(array2int(channel_count)/2)
+            channel_count = int(array2int(channel_count))
 
             for i in range(channel_count):
                 channel = ADC(self.address, i, self.server)
