@@ -4,6 +4,9 @@ import sys
 import time
 import argparse
 import logging
+import os
+
+basepath = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__))))
 
 class ExceptionCanIsp(Exception):
     pass
@@ -357,7 +360,7 @@ def fix_checksum(data):
     data = data[0:4*7] + checksum + data[4*8:]
     return data
 
-def isp_info(node):
+def isp_info(isp):
     print("device_type:", isp.read_device_type())
     print("partID: 0x{:08X} {}".format(*isp.read_partID()))
     print("serial_number: {:08X} {:08X} {:08X} {:08X}".format(*isp.read_serial_number()))
@@ -418,7 +421,7 @@ def isp_exec(isp, filename):
     isp.go(0x10000500)
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser("can_isp.py")
     parser.add_argument(
         "function",
@@ -469,9 +472,10 @@ if __name__ == "__main__":
     elif args.function == "writeconfig":
         isp_write(isp, args.file, "config")
     elif args.function == "reset":
-        isp_exec(isp, "loader/reset.bin")
+        isp_exec(
+            isp,
+            os.path.join(basepath,"loader/reset.bin")
+            )
 
-#    if sys.argv[1] == "write":
-#        isp_write(isp, sys.argv[2])
-#    if sys.argv[1] == "exec":
-#        isp_exec(isp, sys.argv[2])
+if __name__ == "__main__":
+    main()
