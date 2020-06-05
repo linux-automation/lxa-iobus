@@ -2,8 +2,8 @@ import canopen
 import struct
 import sys
 import time
+import argparse
 import logging
-logging.basicConfig(level=logging.DEBUG)
 
 class ExceptionCanIsp(Exception):
     pass
@@ -274,7 +274,7 @@ class CanIsp:
 
     def compare(self, addr_1, addr_2, lenght):
         """
-        Takes two addresses and a lengt and compare the data.
+        Takes two addresses and a length and compare the data.
         Raises IspCompareError if a mismatch is found.
         """
         try:
@@ -287,12 +287,17 @@ class CanIsp:
                 raise IspCompareError(offset)
 
 
-    def flash_image(self, data):
+    def flash_image(self, start, data):
         logging.info("Data to be writen: %d Byte", len(data))
 
         block_size = 4096
 
-        #data must be multiple of 4
+        if (start % block_size) != 0:
+            raise Exception("Start must be a multiple of 4096!")
+
+        start_sector = start//block_size
+
+        #data must be multiple of block size
         # TODO add option for smaller block size
         #      Supporte are: 256, 512, 1024, 4096.
         stuffing = len(data)%block_size
@@ -301,34 +306,38 @@ class CanIsp:
             data += b"\xff"*(block_size-stuffing)
 
         logging.info("Data to be writen %d Bytes", len(data))
+        logging.info("Start sector %d" , start_sector)
 
         sectors = len(data)//block_size
-        if (len(data)%block_size) != 0:
-            # This should not happen as we extended the data buffer to fit in howl sections
-            logging.error("Need to erease extra sector to fit date: %d", len(data))
-            sectors += 1
+        assert (len(data)%block_size) == 0, "Need to erease extra sector to fit date: %d" % len(data)
 
+        logging.info("Sectors to write %d", sectors)
+
+
+        if start_sector + sectors > 8:
+            raise Exception("Data to write does not fit into flash are of 32k")
+
+        logging.info("Erasing blocks %d to %d", start_sector, start_sector+sectors-1)
         # TODO: Add check if we need to erease block use Blank check sectors
-        logging.info("Erasing blocks %d to %d", 0, sectors-1)
         self.unlock() # Unlock writes
-        self.prepare_flash_sectors(0, sectors-1)
-        self.erase_flash_secotrs(0, sectors-1)
+        self.prepare_flash_sectors(start_sector, start_sector+sectors-1)
+        self.erase_flash_secotrs(start_sector, start_sector+sectors-1)
 
         blocks = sectors
 
 
-        for block_num in range(blocks):
-            logging.debug("Send block %d", block_num)
+        for block_num in range(start_sector, start_sector+blocks):
+            logging.info("Send block %d", block_num)
 
-            start_offset = block_size*block_num
+            start_offset = block_size*(block_num-start_sector)
 
             block = data[start_offset: start_offset + block_size]
-            logging.debug("Block length %d", len(block))
+            logging.info("Block length %d", len(block))
             self.write_to_ram(self.ram_offset, block) # Transfer data block to the RAM of the MCU
 
-            logging.debug("Copy to Flash")
+            logging.info("Copy to Flash")
             self.prepare_flash_sectors(block_num, block_num)
-            self.copy_ram_to_flash(self.ram_offset, start_offset, block_size) # Copy block from MCU RAM to MCU Flash
+            self.copy_ram_to_flash(self.ram_offset, block_size*block_num, block_size) # Copy block from MCU RAM to MCU Flash
 
 
 def fix_checksum(data):
@@ -354,22 +363,48 @@ def isp_info(node):
     print("serial_number: {:08X} {:08X} {:08X} {:08X}".format(*isp.read_serial_number()))
     print("bootloader_version: {:08X}".format( isp.read_bootloader_version()))
 
-def isp_write(isp, filename):
-    data = open(filename, "rb").read()
-    data = fix_checksum(data)
+def isp_write(isp, filename, section):
+    assert(section in ["config", "flash"])
 
-    print("Writing new Image")
+    data = open(filename, "rb").read()
+    if section == "flash":
+        data = fix_checksum(data)
+
+    if section == "flash":
+        length = 28*1024
+        start  = 0
+    else:
+        # config
+        length= 4*1024
+        start = 28*1024
+
+    if len(data) > length:
+        print("Supplied Image is too long for section. Allowed {} bytes, is {} bytes".format(length, len(data)))
+        exit(1)
+
+    print("Writing section {}".format(section))
     start_t = time.time()
-    isp.flash_image(data)
+
+    isp.flash_image(start, data)
+
     stop_t = time.time()
     print("Write", len(data), "in", stop_t-start_t, ":", len(data)/(stop_t-start_t),"Bytes/sec")
 
-def isp_read(isp, filename):
-    print("Reading old Image")
+def isp_read(isp, filename, section):
+    assert(section in ["config", "flash"])
+
+    if section == "flash":
+        length = 28*1024
+        start  = 0
+    else:
+        # config
+        length= 4*1024
+        start = 28*1024
+
+    print("Reading section {}".format(section))
     start_t = time.time()
 
-    length = 16*1024
-    data = isp.read_memory(0, length)
+    data = isp.read_memory(start, length)
 
     stop_t = time.time()
     print("Read", length, "in", stop_t-start_t, ":", length/(stop_t-start_t),"Bytes/sec")
@@ -384,19 +419,59 @@ def isp_exec(isp, filename):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print(" tool.py [read | write] file")
+    parser = argparse.ArgumentParser("can_isp.py")
+    parser.add_argument(
+        "function",
+        help="Function to perform",
+        choices=["readflash", "writeflash", "readconfig", "writeconfig", "info", "reset"],
+    )
+    parser.add_argument(
+        "--file",
+        "-f",
+        help="File to use as flash or config",
+    )
+    parser.add_argument(
+        "-v",
+        help="Be verbose",
+        action="store_true",
+    )
+    parser.add_argument(
+        "-s",
+        help="Skip info section at startup",
+        action="store_true",
+    )
+    args = parser.parse_args()
+
+    if args.function in ["readflash", "writeflash", "readconfig", "writeconfig"] \
+       and args.file is None:
+        parser.error("file is required for this function")
+        exit(1)
+
+    if args.v:
+        logging.basicConfig(level=logging.INFO)
+    else:
+        logging.basicConfig(level=logging.WARN)
 
     network = canopen.Network()
     network.connect(channel='can0', bustype='socketcan')
     node = network.add_node(125)
     isp = CanIsp(node)
 
-    isp_info(isp)
+    if not args.s:
+        isp_info(isp)
 
-    if sys.argv[1] == "read":
-        isp_read(isp, sys.argv[2])
-    if sys.argv[1] == "write":
-        isp_write(isp, sys.argv[2])
-    if sys.argv[1] == "exec":
-        isp_exec(isp, sys.argv[2])
+    if args.function == "readflash":
+        isp_read(isp, args.file, "flash")
+    elif args.function == "readconfig":
+        isp_read(isp, args.file, "config")
+    elif args.function == "writeflash":
+        isp_write(isp, args.file, "flash")
+    elif args.function == "writeconfig":
+        isp_write(isp, args.file, "config")
+    elif args.function == "reset":
+        isp_exec(isp, "loader/reset.bin")
+
+#    if sys.argv[1] == "write":
+#        isp_write(isp, sys.argv[2])
+#    if sys.argv[1] == "exec":
+#        isp_exec(isp, sys.argv[2])
