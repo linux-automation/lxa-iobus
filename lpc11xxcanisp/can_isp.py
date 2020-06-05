@@ -360,13 +360,13 @@ def fix_checksum(data):
     data = data[0:4*7] + checksum + data[4*8:]
     return data
 
-def isp_info(isp):
+def _isp_info(isp):
     print("device_type:", isp.read_device_type())
     print("partID: 0x{:08X} {}".format(*isp.read_partID()))
     print("serial_number: {:08X} {:08X} {:08X} {:08X}".format(*isp.read_serial_number()))
     print("bootloader_version: {:08X}".format( isp.read_bootloader_version()))
 
-def isp_write(isp, filename, section):
+def _isp_write(isp, filename, section):
     assert(section in ["config", "flash"])
 
     data = open(filename, "rb").read()
@@ -393,7 +393,7 @@ def isp_write(isp, filename, section):
     stop_t = time.time()
     print("Write", len(data), "in", stop_t-start_t, ":", len(data)/(stop_t-start_t),"Bytes/sec")
 
-def isp_read(isp, filename, section):
+def _isp_read(isp, filename, section):
     assert(section in ["config", "flash"])
 
     if section == "flash":
@@ -413,13 +413,30 @@ def isp_read(isp, filename, section):
     print("Read", length, "in", stop_t-start_t, ":", length/(stop_t-start_t),"Bytes/sec")
     open(filename, "wb").write(data)
 
-def isp_exec(isp, filename):
+def _isp_exec(isp, filename):
     data = open(filename, "rb").read()
 
     isp.unlock()
     isp.write_to_ram(0x10000500, data)
     isp.go(0x10000500)
 
+def isp_readflash(filename):
+    _isp_read(isp, filename, "flash")
+
+def isp_readconfig(filename):
+    _isp_read(isp, filename, "config")
+
+def isp_writeflash(filename):
+    _isp_write(isp, filename, "flash")
+
+def isp_writeconfig(filename):
+    _isp_write(isp, filename, "config")
+
+def isp_reset():
+    _isp_exec(
+        isp,
+        os.path.join(basepath,"loader/reset.bin")
+        )
 
 def main():
     parser = argparse.ArgumentParser("can_isp.py")
@@ -455,27 +472,25 @@ def main():
     else:
         logging.basicConfig(level=logging.WARN)
 
-    network = canopen.Network()
-    network.connect(channel='can0', bustype='socketcan')
-    node = network.add_node(125)
-    isp = CanIsp(node)
 
     if not args.s:
-        isp_info(isp)
+        _isp_info(isp)
 
     if args.function == "readflash":
-        isp_read(isp, args.file, "flash")
+        _isp_read(isp, args.file, "flash")
     elif args.function == "readconfig":
-        isp_read(isp, args.file, "config")
+        _isp_read(isp, args.file, "config")
     elif args.function == "writeflash":
-        isp_write(isp, args.file, "flash")
+        _isp_write(isp, args.file, "flash")
     elif args.function == "writeconfig":
-        isp_write(isp, args.file, "config")
+        _isp_write(isp, args.file, "config")
     elif args.function == "reset":
-        isp_exec(
-            isp,
-            os.path.join(basepath,"loader/reset.bin")
-            )
+        isp_reset()
+
+network = canopen.Network()
+network.connect(channel='can0', bustype='socketcan')
+node = network.add_node(125)
+isp = CanIsp(node)
 
 if __name__ == "__main__":
     main()

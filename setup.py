@@ -11,7 +11,7 @@ setup(
     packages=['lpc11xxcanisp'],
     entry_points={
         'console_scripts': [
-            'lpc11xxcanisp_invoke = lpc11xxcanisp.invoke_isp:main',
+            'lpc11xxcanisp_invoke = lpc11xxcanisp.invoke_isp:invoke_rom_loader',
             'lpc11xxcanisp_program = lpc11xxcanisp.can_isp:main',
         ],
     },

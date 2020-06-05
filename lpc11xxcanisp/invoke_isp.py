@@ -21,7 +21,7 @@ class CanOpen:
         """set port state"""
         self.node.sdo.download(0x2b07, 0, struct.pack("I", 0x12345678))
 
-def main():
+def invoke_rom_loader():
     can = CanOpen()
     can.setup()
 
@@ -31,4 +31,4 @@ def main():
         pass
 
 if __name__ == "__main__":
-    main()
+    invoke_rom_loader()
