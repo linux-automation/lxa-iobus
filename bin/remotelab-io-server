@@ -41,7 +41,14 @@ logging.basicConfig(level=log_level)
 # setup server
 loop = asyncio.get_event_loop()
 app = Application()
-server = RemoteLabIOServer(app, loop, args.interface)
+
+try:
+    server = RemoteLabIOServer(app, loop, args.interface)
+
+except OSError as e:
+    if e.errno == 19:  # can interface not available
+        exit('interface {} not available'.format(args.interface))
+
 
 if args.shell:
     def _start_shell():
