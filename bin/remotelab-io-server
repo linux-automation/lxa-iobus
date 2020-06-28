@@ -40,6 +40,16 @@ logging.basicConfig(level=log_level)
 
 # setup server
 loop = asyncio.get_event_loop()
+
+
+def handle_exception(loop, context):
+    print(context['exception'])
+
+    server.shutdown()
+    os.kill(os.getpid(), signal.SIGTERM)
+
+
+loop.set_exception_handler(handle_exception)
 app = Application()
 
 try:
@@ -74,9 +84,15 @@ try:
     run_app(app=app, host=args.host, port=args.port,
             handle_signals=True, print=lambda *args, **kwargs: None)
 
+except KeyboardInterrupt:
+    server.shutdown()
+    os.kill(os.getpid(), signal.SIGTERM)
+
 except OSError:
     server.shutdown()
     exit('ERROR: can not bind to port {}'.format(args.port))
 
-server.shutdown()
 print('\rshutting down server')
+
+server.shutdown()
+os.kill(os.getpid(), signal.SIGTERM)

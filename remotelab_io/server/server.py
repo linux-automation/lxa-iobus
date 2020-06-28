@@ -4,6 +4,7 @@ from queue import Queue
 import concurrent
 import asyncio
 import logging
+import signal
 import json
 import os
 
@@ -202,6 +203,14 @@ class RemoteLabIOServer:
                 future.set_exception(e)
 
     async def _canopen_bus_management(self):
+        try:
+            await self._canopen_bus_management_worker()
+
+        except OSError as e:
+            print(e)
+            os.kill(os.getpid(), signal.SIGTERM)
+
+    async def _canopen_bus_management_worker(self):
         """
         Search for new nodes and cleanup old ones.
         """
