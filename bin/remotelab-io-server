@@ -6,6 +6,7 @@ import asyncio
 import logging
 import signal
 import os
+import errno
 
 from aiohttp.web import Application, run_app
 
@@ -56,7 +57,7 @@ try:
     server = RemoteLabIOServer(app, loop, args.interface)
 
 except OSError as e:
-    if e.errno == 19:  # can interface not available
+    if e.errno == errno.ENODEV:  # can interface not available
         exit('interface {} not available'.format(args.interface))
 
 
