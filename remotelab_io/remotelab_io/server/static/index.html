@@ -1,0 +1,19 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>RemoteLab IO</title>
+    <link rel="stylesheet" type="text/css" href="/static/style.css">
+  </head>
+  <body>
+    <div id="ractive"></div>
+    <script id="main" type="text/html">
+      <h1>{{#if connected }}RemoteLab IO{{else}}Reconnecting{{#dots}}{{.}}{{/}}{{/if}}</h1>
+      {{#if connected }}
+        <pre>{{state}}</pre>
+      {{/if}}
+    </script>
+    <script src="/static/ractive.min.js"></script>
+    <script src="/static/rpc.js"></script>
+    <script src="/static/main.js"></script>
+  </body>
+</html>
