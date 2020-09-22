@@ -10,7 +10,7 @@ import errno
 
 from aiohttp.web import Application, run_app
 
-from remotelab_io.server.server import RemoteLabIOServer
+from lxa_iobus.server.server import LXAIOBusServer
 
 # parse command line arguments
 parser = ArgumentParser()
@@ -54,7 +54,7 @@ loop.set_exception_handler(handle_exception)
 app = Application()
 
 try:
-    server = RemoteLabIOServer(app, loop, args.interface)
+    server = LXAIOBusServer(app, loop, args.interface)
 
 except OSError as e:
     if e.errno == errno.ENODEV:  # can interface not available

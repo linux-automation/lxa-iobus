@@ -1,13 +1,13 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>RemoteLab IO</title>
+    <title>LXA IOBus Server</title>
     <link rel="stylesheet" type="text/css" href="/static/style.css">
   </head>
   <body>
     <div id="ractive"></div>
     <script id="main" type="text/html">
-      <h1>{{#if connected }}RemoteLab IO{{else}}Reconnecting{{#dots}}{{.}}{{/}}{{/if}}</h1>
+      <h1>{{#if connected }}LXA IOBus Server{{else}}Reconnecting{{#dots}}{{.}}{{/}}{{/if}}</h1>
       {{#if connected }}
         <pre>{{state}}</pre>
       {{/if}}

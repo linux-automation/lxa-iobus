@@ -5,6 +5,17 @@ from setuptools import setup, find_packages
 
 import lxa_iobus
 
+EXTRAS_REQUIRE = {
+    'server': [
+        'aiohttp-json-rpc==0.12.1',
+    ],
+    'shell': [
+        'ipython<7',
+    ],
+}
+
+EXTRAS_REQUIRE['full'] = sum([v for k, v in EXTRAS_REQUIRE.items()], [])
+
 setup(
     include_package_data=True,
     name='lxa-iobus',
@@ -14,8 +25,11 @@ setup(
     author_email='python@pengutronix.de',
     license='Apache License 2.0',
     packages=find_packages(),
-    install_requires=[],
-    extras_require={},
-    scripts=[],
-    entry_points={},
+    install_requires=[
+        'canopen',
+    ],
+    extras_require=EXTRAS_REQUIRE,
+    scripts=[
+        'bin/lxa-iobus-server',
+    ],
 )

@@ -4,7 +4,7 @@ import logging
 import canopen
 
 
-logger = logging.getLogger('RemoteLabIO.canopen')
+logger = logging.getLogger('lxa-iobus.canopen')
 
 
 def node_adr_to_lss(adr):
@@ -219,7 +219,7 @@ class CanNodes():
         return node.node.sdo.download(index, subindex, bytearray(data))
 
 
-class RemoteLabIOCanopenListener(canopen.network.MessageListener):
+class LXAIOBusCanopenListener(canopen.network.MessageListener):
     """keeps track of all nodes in the network
       Listens for the following messages:
      - Heartbeat (0x700)

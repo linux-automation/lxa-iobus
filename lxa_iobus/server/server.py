@@ -12,15 +12,15 @@ from canopen import Network
 from aiohttp.web import FileResponse, Response
 from aiohttp_json_rpc import JsonRpc
 
-from remotelab_io.server.canopen import RemoteLabIOCanopenListener, setup_async
-from remotelab_io.server.node_drivers import drivers
-from remotelab_io.server.nodes import Node
+from lxa_iobus.server.canopen import LXAIOBusCanopenListener, setup_async
+from lxa_iobus.server.node_drivers import drivers
+from lxa_iobus.server.nodes import Node
 
 STATIC_ROOT = os.path.join(os.path.dirname(__file__), 'static')
-logger = logging.getLogger('RemoteLabIOServer')
+logger = logging.getLogger('LXAIOBusServer')
 
 
-class RemoteLabIOServer:
+class LXAIOBusServer:
     def __init__(self, app, loop, interface):
         self.app = app
         self.loop = loop
@@ -57,7 +57,7 @@ class RemoteLabIOServer:
         self.loop.create_task(self.flush_state())
 
         # setup canopen
-        self.canopen_listener = RemoteLabIOCanopenListener()
+        self.canopen_listener = LXAIOBusCanopenListener()
         self.canopen_network = Network()
 
         setup_async(loop, self.canopen_listener, self.canopen_network,
