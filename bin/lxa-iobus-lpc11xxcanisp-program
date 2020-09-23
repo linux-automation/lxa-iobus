@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import canopen
 import struct
 import sys
@@ -6,7 +9,10 @@ import argparse
 import logging
 import os
 
-basepath = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__))))
+from lxa_iobus.lpc11xxcanisp import loader
+
+basepath = os.path.dirname(os.path.dirname(loader.__file__))
+
 
 class ExceptionCanIsp(Exception):
     pass

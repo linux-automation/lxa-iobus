@@ -19,3 +19,7 @@ all: $(TARGETS)
 
 clean:
 	rm $(TARGETS)
+
+release: soft_reset.bin reset.bin
+	mv reset.bin ../lxa_iobus/lpc11xxcanisp/loader/reset.bin
+	mv soft_reset.bin ../lxa_iobus/lpc11xxcanisp/loader/soft_reset.bin

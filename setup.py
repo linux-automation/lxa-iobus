@@ -31,5 +31,8 @@ setup(
     extras_require=EXTRAS_REQUIRE,
     scripts=[
         'bin/lxa-iobus-server',
+        'bin/lxa-iobus-can-setup',
+        'bin/lxa-iobus-lpc11xxcanisp-invoke',
+        'bin/lxa-iobus-lpc11xxcanisp-program',
     ],
 )
