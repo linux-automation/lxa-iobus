@@ -1,4 +1,92 @@
-body {
-    font-size: 12px;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+#main-grid,
+#content {
+    min-height: 100%;
+}
+
+#main-grid {
+    display: grid;
+    grid-template-columns: auto 1000px auto;
+    grid-template-rows: 2em 5em auto;
+}
+
+#banner {
+    grid-column-start: 1;
+    grid-column-end: 4;
+    grid-row-start: 1;
+    grid-row-end: 3;
+
+    content: " ";
+    background-color: lightgrey;
+    border-bottom: 1px solid #999;
+}
+
+#content {
+    grid-column-start: 2;
+    grid-column-end: 2;
+    grid-row-start: 2;
+    grid-row-end: 4;
+
+    padding: 1em 0.5em;
+    background-color: white;
+    box-shadow: 0 0.25em 0.5em #777;
+    border: 1px solid #999;
+    border-bottom: 0px;
+    border-radius: 4px 4px 0px 0px;
+}
+
+#template {
+    padding: 0.5em 1em;
+}
+
+#content h1:first-child {
+    margin-top: 0;
+}
+
+#content h1 {
+    padding-left: 0.5em;
+}
+
+.pure-menu {
+    height: 2em;
+}
+
+.pure-menu-link {
+    background-color: transparent !important;
+    padding-right: 0;
+}
+
+#node-table tbody tr td:first-child {
+    cursor: pointer;
+}
+
+#node-table tr.alive {
+    color: white;
+    background-color: #5caa3e;
+}
+
+#node-table tr.dead {
+    color: white;
+    background-color: #b73636;
+}
+
+#node-info-back {
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#node-info {
+    margin-top: 0.75em;
+}
+
+#node-info tr {
+    text-align: left;
+}
+
+#outputs button {
+    margin-right: 0.5em;
+}
+
+#outputs button.button-success {
+    background-color: #5baa3e;
+    color: white;
 }

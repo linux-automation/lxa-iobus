@@ -238,3 +238,49 @@ class Node:
             "adcs": adcs,
             "alive": self.is_alive,
         }
+
+    async def get_info(self):
+        if hasattr(self, '_info'):
+            return self._info
+
+        device_name = await self.server.canopen_serialize(
+            self.server.canopen_listener.nodes.upload,
+            self.address, 0x1008, 0,
+        )
+
+        hardware_version = await self.server.canopen_serialize(
+            self.server.canopen_listener.nodes.upload,
+            self.address, 0x1009, 0,
+        )
+
+        software_version = await self.server.canopen_serialize(
+            self.server.canopen_listener.nodes.upload,
+            self.address, 0x100a, 0,
+        )
+
+        self._info = {
+            'device_name': device_name.decode(),
+            'hardware_version': hardware_version.decode(),
+            'software_version': software_version.decode(),
+        }
+
+        return self._info
+
+    # locator #################################################################
+    async def get_locator_state(self):
+        raw_locator_state = await self.server.canopen_serialize(
+            self.server.canopen_listener.nodes.upload,
+            self.address, 0x210c, 1)
+
+        return array2int(raw_locator_state)
+
+    async def set_locator_state(self, state):
+        if state:
+            state = b'\x01\x00\x00\x00'
+
+        else:
+            state = b'\x00\x00\x00\x00'
+
+        await self.server.canopen_serialize(
+            self.server.canopen_listener.nodes.download,
+            self.address, 0x210c, 1, state)

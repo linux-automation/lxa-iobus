@@ -51,6 +51,13 @@ class LXAIOBusServer:
         app.router.add_route('GET', '/nodes/{node}/pins/{pin}/', self.get_pin)
         app.router.add_route('POST', '/nodes/{node}/pins/{pin}/', self.set_pin)
         app.router.add_route('GET', '/nodes/{node}/pins/', self.get_pins)
+
+        app.router.add_route('POST', '/nodes/{node}/toggle-locator/',
+                             self.toggle_locator)
+
+        app.router.add_route('GET', '/nodes/{node}/pin-info/',
+                             self.get_pin_info)
+
         app.router.add_route('GET', '/nodes/', self.get_nodes)
 
         # flush initial state
@@ -138,6 +145,48 @@ class LXAIOBusServer:
 
         return Response(text=json.dumps(response))
 
+    async def get_pin_info(self, request):
+        response = {
+            'code': 0,
+            'error_message': '',
+            'result': None,
+        }
+
+        try:
+            node_name = request.match_info['node']
+            node_driver = self.state['nodes'][node_name]
+
+            pin_info = {
+                'locator': await node_driver.node.get_locator_state(),
+                'inputs': {},
+                'outputs': {},
+                'adcs': {},
+            }
+
+            for pin_name, pin in node_driver.pins.items():
+                value = await pin.read()
+
+                if pin.pin_type == 'input':
+                    pin_info['inputs'][pin_name] = value
+
+                elif pin.pin_type == 'output':
+                    pin_info['outputs'][pin_name] = value
+
+                elif pin.pin_type == 'adc':
+                    pin_info['adcs'][pin_name] = value
+
+            response['result'] = pin_info
+
+        except Exception as e:
+            logger.exception("get_pin failed")
+            response = {
+                'code': 1,
+                'error_message': str(e),
+                'result': None,
+            }
+
+        return Response(text=json.dumps(response))
+
     async def set_pin(self, request):
         response = {
             'code': 0,
@@ -147,12 +196,20 @@ class LXAIOBusServer:
 
         try:
             node = request.match_info['node']
-            pin = request.match_info['pin']
+            pin_name = request.match_info['pin']
             post = await request.post()
             value = post['value']
 
-            response['result'] = \
-                await self.state['nodes'][node].pins[pin].write(int(value))
+            pin = self.state['nodes'][node].pins[pin_name]
+
+            if value == 'toggle':
+                value = await pin.read()
+                value = 1 - value
+
+            else:
+                value = int(value)
+
+            response['result'] = await pin.write(value)
 
         except Exception as e:
             logger.exception("set_pin failed")
@@ -164,9 +221,54 @@ class LXAIOBusServer:
 
         return Response(text=json.dumps(response))
 
+    async def toggle_locator(self, request):
+        response = {
+            'code': 0,
+            'error_message': '',
+            'result': None,
+        }
+
+        try:
+            node_address = request.match_info['node']
+            node_driver = self.state['nodes'][node_address]
+
+            state = await node_driver.node.get_locator_state()
+
+            if state == 1:
+                new_state = 0
+
+            else:
+                new_state = 1
+
+            await node_driver.node.set_locator_state(new_state)
+
+        except Exception as e:
+            logger.exception('toggle locator failed')
+
+            response = {
+                'code': 1,
+                'error_message': str(e),
+                'result': None,
+            }
+
+        return Response(text=json.dumps(response))
+
     # state (rpc) #############################################################
     async def flush_state(self):
-        await self.rpc.notify('state', pformat(self.state))
+        state = []
+        node_ids = sorted(self.state['nodes'].keys())
+
+        for node_id in node_ids:
+            node_driver = self.state['nodes'][node_id]
+            state.append([
+                node_id, {
+                    'is_alive': node_driver.is_alive,
+                    'driver': node_driver.__class__.__name__,
+                    'info': await node_driver.node.get_info(),
+                },
+            ])
+
+        await self.rpc.notify('state', state)
 
     def flush_state_sync(self, wait=True):
         self.rpc.worker_pool.run_sync(
@@ -207,7 +309,8 @@ class LXAIOBusServer:
             await self._canopen_bus_management_worker()
 
         except OSError as e:
-            print(e)
+            logging.error(e, exc_info=True)
+
             os.kill(os.getpid(), signal.SIGTERM)
 
     async def _canopen_bus_management_worker(self):

@@ -1,3 +1,18 @@
+// helper functions -----------------------------------------------------------
+function toggle_locator(node_address) {
+    $.post('/nodes/' + node_address + '/toggle-locator/');
+
+    update_pin_info();
+};
+
+function toggle_pin(node_address, pin_name) {
+    $.post('/nodes/' + node_address + '/pins/' + pin_name + '/', {
+        value: 'toggle',
+    });
+
+    update_pin_info();
+};
+
 // Ractive --------------------------------------------------------------------
 Ractive.DEBUG = false;
 
@@ -6,8 +21,25 @@ var ractive = Ractive({
     template: '#main',
     data: {
         connected: true,
+        template: 'nodes',
         dots: [],
         state: '',
+    },
+    computed: {
+        node_info: function() {
+            var selected_node = this.get('selected_node');
+            var state = this.get('state');
+
+            for(var i in this.get('state')) {
+                var node = state[i];
+
+                if(node[0] == selected_node) {
+                    return node[1];
+                };
+            };
+
+            return {};
+        },
     },
 });
 
@@ -52,3 +84,24 @@ rpc.on('open', function(rpc) {
 });
 
 rpc.connect();
+
+function update_pin_info() {
+    if(!ractive.get('connected')) {
+        return;
+    };
+
+    var selected_node = ractive.get('selected_node');
+
+    if(!selected_node) {
+        return;
+    };
+
+    $.getJSON('/nodes/' + selected_node + '/pin-info/').done(function(data) {
+        ractive.set('pin_info', data.result);
+    });
+
+};
+
+setInterval(function() {
+    update_pin_info();
+}, 1000);

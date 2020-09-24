@@ -1,19 +1,122 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>LXA IOBus Server</title>
+    <link rel="stylesheet" type="text/css" href="/static/lib/pure-min.css">
     <link rel="stylesheet" type="text/css" href="/static/style.css">
+    <title>LXA IOBus Server</title>
   </head>
   <body>
-    <div id="ractive"></div>
+    <div id="main-grid">
+      <div id="banner"></div>
+
+      <div id="content">
+        <div id="ractive"></div>
+      </div>
+
+    </div>
+
     <script id="main" type="text/html">
-      <h1>{{#if connected }}LXA IOBus Server{{else}}Reconnecting{{#dots}}{{.}}{{/}}{{/if}}</h1>
-      {{#if connected }}
-        <pre>{{state}}</pre>
+      <h1>LXA IOBus Server</h1>
+
+      {{#if connected}}
+        <div class="pure-menu pure-menu-horizontal">
+          <ul class="pure-menu-list">
+            <li class="pure-menu-item{{#if template=='nodes'}} pure-menu-selected{{/if}}">
+              <a href="#" class="pure-menu-link" on-click="@.set('template', 'nodes')">Nodes</a>
+            </li>
+          </ul>
+        </div>
+        <div id="template">
+          {{>template}}
+        </div>
+      {{else}}
+        <h3>Reconnecting{{#dots}}{{.}}{{/}}</h3>
       {{/if}}
     </script>
-    <script src="/static/ractive.min.js"></script>
-    <script src="/static/rpc.js"></script>
+
+    <script id="nodes" type="text/html">
+      {{#if selected_node}}
+        <span id="node-info-back" on-click="@.set('selected_node', '')">&lt; Back</span>
+
+        <table id="node-info" class="pure-table">
+          <tbody>
+            <tr>
+              <th>Address</th>
+              <td>{{ selected_node }}</td>
+            </tr>
+            <tr>
+              <th>Driver</th>
+              <td>{{ node_info.driver }}</td>
+            </tr>
+            <tr>
+              <th>Device Name</th>
+              <td>{{ node_info.info.device_name }}</td>
+            </tr>
+            <tr>
+              <th>Hardware Version</th>
+              <td>{{ node_info.info.hardware_version }}</td>
+            </tr>
+            <tr>
+              <th>Software Version</th>
+              <td>{{ node_info.info.software_version }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div id="outputs">
+          <h3>Locator</h3>
+          <button class="{{#if pin_info.locator == 1}}button-success{{/if}} pure-button" onclick="toggle_locator('{{ selected_node }}')">Locator</button>
+
+          <h3>Outputs</h3>
+          {{#pin_info.outputs:pin}}
+            <button class="{{#if pin_info.outputs[pin] == 1}}button-success{{/if}} pure-button" onclick="toggle_pin('{{ selected_node }}', '{{ pin }}')">{{ pin }}</button>
+          {{/}}
+
+          <h3>Inputs</h3>
+          <table class="pure-table">
+            {{#pin_info.inputs:pin}}
+              <tr>
+                <th>{{ pin }}</th>
+                <td>{{ pin_info.inputs[pin] }}</td>
+              </tr>
+            {{/}}
+          </table>
+
+          <h3>ADCs</h3>
+          <table class="pure-table">
+            {{#pin_info.adcs:pin}}
+              <tr>
+                <th>{{ pin }}</th>
+                <td>{{ pin_info.adcs[pin] }}</td>
+              </tr>
+            {{/}}
+          </table>
+        </div>
+      {{else}}
+        <table id="node-table" class="pure-table" width="100%">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Address</th>
+              <th>Driver</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#state:node_id}}
+              <tr class="{{#if state[node_id][1].is_alive}}alive{{else}}dead{{/if}}">
+                <td on-click="@.set('selected_node', state[node_id][0])">{{state[node_id][1].info.device_name}}</td>
+                <td>{{state[node_id][0]}}</td>
+                <td>{{state[node_id][1].driver}}</td>
+              </tr>
+            {{/}}
+          </tbody>
+        </table>
+      {{/if}}
+    </script>
+
+    <script src="/static/lib/jquery-3.5.1.min.js"></script>
+    <script src="/static/lib/ractive.min.js"></script>
+    <script src="/static/lib/rpc.js"></script>
     <script src="/static/main.js"></script>
   </body>
 </html>
