@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from argparse import ArgumentParser
+import traceback
 import asyncio
 import logging
 import signal
@@ -44,7 +45,11 @@ loop = asyncio.get_event_loop()
 
 
 def handle_exception(loop, context):
-    print(context['exception'])
+    traceback.print_exception(
+        context['exception'].__class__,
+        context['exception'],
+        context['exception'].__traceback__,
+    )
 
     server.shutdown()
     os.kill(os.getpid(), signal.SIGTERM)
