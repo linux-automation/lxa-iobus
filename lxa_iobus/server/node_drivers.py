@@ -136,6 +136,83 @@ class IOMuxDriver(NodeDriver):
             return 'IOMux-{}'.format(node.address.split('.')[-1])
         return None
 
+class PTXIOMuxDriver(NodeDriver):
+    def _get_pins(self):
+        return {
+            'OUT0': Pin(
+                node=self.node,
+                pin_type='output',
+                channel=0,
+                bit=0,
+            ),
+            'OUT1': Pin(
+                node=self.node,
+                pin_type='output',
+                channel=0,
+                bit=1,
+            ),
+            'OUT2': Pin(
+                node=self.node,
+                pin_type='output',
+                channel=0,
+                bit=2,
+            ),
+            'OUT3': Pin(
+                node=self.node,
+                pin_type='output',
+                channel=0,
+                bit=3,
+            ),
+            'IN4': Pin(
+                node=self.node,
+                pin_type='input',
+                channel=0,
+                bit=0,
+            ),
+            'IN5': Pin(
+                node=self.node,
+                pin_type='input',
+                channel=0,
+                bit=1,
+            ),
+            'IN6': Pin(
+                node=self.node,
+                pin_type='input',
+                channel=0,
+                bit=2,
+            ),
+            'AIN0': Pin(
+                node=self.node,
+                pin_type='adc',
+                channel=0,
+                bit=None,
+            ),
+            'AIN1': Pin(
+                node=self.node,
+                pin_type='adc',
+                channel=1,
+                bit=None,
+            ),
+            'AIN2': Pin(
+                node=self.node,
+                pin_type='adc',
+                channel=2,
+                bit=None,
+            ),
+            'VIN': Pin(
+                node=self.node,
+                pin_type='adc',
+                channel=3,
+                bit=None,
+            ),
+        }
+
+    @classmethod
+    def match(cls, node):
+        if node.address.startswith('00000000.00000004.00000001.'):
+            return 'PTXIOMux-{}'.format(node.address.split('.')[-1])
+        return None
+
 class EthMuxDriver(NodeDriver):
     def _get_pins(self):
         return {
@@ -181,5 +258,6 @@ class EthMuxDriver(NodeDriver):
 drivers = [
     IOMuxDriver,
     EthMuxDriver,
+    PTXIOMuxDriver,
     NodeDriver,  # catch all
 ]
