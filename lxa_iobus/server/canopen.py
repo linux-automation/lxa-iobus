@@ -118,6 +118,11 @@ class CanNodes():
             # TODO this needs to be known by the driver to bring back
             # the old state
             old_node_map.update_node_id(node_id)
+
+        elif node_id in self.network:
+            node = self.network[node_id]
+            self.nodes.append(CanNode(lss, node_id, node))
+
         else:
             logger.info("Add new Node Mapping %d, %x %x %x %X", node_id, *lss)
             node = self.network.add_node(node_id)
@@ -136,7 +141,7 @@ class CanNodes():
             used_ids.append(node.node_id)
 
         # TODO: Send CANopen Packet to id to verify if its free
-        for i in range(1, 128):
+        for i in range(1, 125):
             if i not in used_ids:
                 return i
 
@@ -169,6 +174,9 @@ class CanNodes():
         """
 
         # TODO: Maybe this is overdoing it, maybe just send out requests
+        if node_id == 125:  # 125 is reserved for CAN ISP
+            return
+
         node = self.get_node_by_id(node_id)
         if node is None:
             logger.error("Node id: %d is not in DB but on the Bus", node_id)
@@ -265,7 +273,7 @@ class LXAIOBusCanopenListener(canopen.network.MessageListener):
 
         service = cob_id & 0x780
         if service in self.SERVICES:
-            node_id = cob_id & 0x1f
+            node_id = cob_id & 0x7f
             self.nodes.seen_node_id(node_id)
 
     def get_node_list(self):
