@@ -1,5 +1,8 @@
 import struct
 
+from canopen.sdo.exceptions import SdoCommunicationError
+
+
 def array2int(a):
     out = 0
 
@@ -239,8 +242,11 @@ class Node:
             "alive": self.is_alive,
         }
 
+    def invalidate_info_cache(self):
+        self._info = None
+
     async def get_info(self):
-        if hasattr(self, '_info'):
+        if hasattr(self, '_info') and self._info is not None:
             return self._info
 
         device_name = await self.server.canopen_serialize(
@@ -284,3 +290,14 @@ class Node:
         await self.server.canopen_serialize(
             self.server.canopen_listener.nodes.download,
             self.address, 0x210c, 1, state)
+
+    # isp #####################################################################
+    async def invoke_isp(self):
+        try:
+            await self.server.canopen_serialize(
+                self.server.canopen_listener.nodes.download,
+                self.address, 0x2b07, 0, struct.pack('I', 0x12345678)
+            )
+
+        except SdoCommunicationError:
+            pass

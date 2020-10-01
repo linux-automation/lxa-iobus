@@ -1,3 +1,4 @@
+from concurrent.futures import CancelledError
 from functools import partial
 from pprint import pformat
 from queue import Queue
@@ -9,10 +10,11 @@ import json
 import os
 
 from canopen import Network
-from aiohttp.web import FileResponse, Response
+from aiohttp.web import FileResponse, Response, HTTPFound
 from aiohttp_json_rpc import JsonRpc
 
 from lxa_iobus.server.canopen import LXAIOBusCanopenListener, setup_async
+from lxa_iobus.lpc11xxcanisp.can_isp import CanIsp
 from lxa_iobus.server.node_drivers import drivers
 from lxa_iobus.server.nodes import Node
 
@@ -21,10 +23,11 @@ logger = logging.getLogger('LXAIOBusServer')
 
 
 class LXAIOBusServer:
-    def __init__(self, app, loop, interface):
+    def __init__(self, app, loop, interface, firmware_directory):
         self.app = app
         self.loop = loop
         self.interface = interface
+        self.firmware_directory = firmware_directory
 
         self.state = {
             'low_level_nodes': {},
@@ -39,6 +42,8 @@ class LXAIOBusServer:
 
         self.rpc.add_topics(
             ('state',),
+            ('firmware',),
+            ('isp_console',),
         )
 
         app.router.add_route(
@@ -60,12 +65,33 @@ class LXAIOBusServer:
 
         app.router.add_route('GET', '/nodes/', self.get_nodes)
 
+        # firmware urls
+        app.router.add_route(
+            'POST',
+            '/nodes/{node}/flash-firmware/{source}/{file_name}',
+            self.firmware_flash,
+        )
+
+        app.router.add_route(
+            'POST',
+            '/firmware/upload/',
+            self.firmware_upload,
+        )
+
+        app.router.add_route(
+            'POST',
+            '/firmware/delete/{file_name}',
+            self.firmware_delete,
+        )
+
         # flush initial state
         self.loop.create_task(self.flush_state())
 
         # setup canopen
         self.canopen_listener = LXAIOBusCanopenListener()
         self.canopen_network = Network()
+        self.can_isp_node = self.canopen_network.add_node(125)
+        self.can_isp = CanIsp(self, self.can_isp_node)
 
         setup_async(loop, self.canopen_listener, self.canopen_network,
                     channel=self.interface, bustype='socketcan')
@@ -73,8 +99,67 @@ class LXAIOBusServer:
         self.canopen_bus_worker_start()
         self.loop.create_task(self._canopen_bus_management())
 
+        # discover firmware files in firmware directory
+        self.loop.create_task(self.discover_firmware_files())
+
+        # flash worker
+        self._running = True
+        self.flash_jobs = asyncio.Queue()
+        self.loop.create_task(self.flash_worker())
+
     def shutdown(self):
         self.canopen_bus_worker_stop()
+
+        self.flash_jobs.put_nowait(
+            (True, None, None, )
+        )
+
+        self._running = False
+
+    async def discover_firmware_files(self):
+        local_files = []
+
+        for i in os.listdir(self.firmware_directory):
+            if i.startswith('.'):
+                continue
+
+            local_files.append(i)
+
+        await self.rpc.notify('firmware', {
+            'local_files': local_files,
+        })
+
+    async def flash_worker(self):
+        while self._running:
+            try:
+                shutdown, node, file_name = await self.flash_jobs.get()
+
+                if shutdown:
+                    return
+
+                self.can_isp.console_log('Invoking isp')
+                await node.invoke_isp()
+
+                self.can_isp.console_log('Start flashing')
+                await self.canopen_serialize(
+                    self.can_isp.write_flash,
+                    file_name,
+                )
+
+                self.can_isp.console_log('Reseting node')
+                await self.canopen_serialize(
+                    self.can_isp.reset,
+                )
+
+                self.can_isp.console_log('Flashing done')
+
+                node.invalidate_info_cache()
+
+            except CancelledError:
+                return
+
+            except Exception:
+                logger.exception('flashing failed')
 
     # views ###################################################################
     async def index(self, request):
@@ -178,7 +263,6 @@ class LXAIOBusServer:
             response['result'] = pin_info
 
         except Exception as e:
-            logger.exception("get_pin failed")
             response = {
                 'code': 1,
                 'error_message': str(e),
@@ -253,6 +337,103 @@ class LXAIOBusServer:
 
         return Response(text=json.dumps(response))
 
+    # firmware views ##########################################################
+    async def firmware_upload(self, request):
+        response = {
+            'code': 0,
+            'error_message': '',
+            'result': None,
+        }
+
+        try:
+            data = await request.post()
+
+            filename = data['file'].filename
+            file_content = data['file'].file.read()
+
+            abs_filename = os.path.join(self.firmware_directory, filename)
+
+            with open(abs_filename, 'wb+') as f:
+                f.write(file_content)
+
+            await self.discover_firmware_files()
+
+            return HTTPFound('/#firmware-files')
+
+        except Exception as e:
+            logger.exception('firmware upload failed')
+
+            response = {
+                'code': 1,
+                'error_message': str(e),
+                'result': None,
+            }
+
+        return Response(text=json.dumps(response))
+
+    async def firmware_delete(self, request):
+        response = {
+            'code': 0,
+            'error_message': '',
+            'result': None,
+        }
+
+        try:
+            filename = os.path.join(self.firmware_directory,
+                                    request.match_info['file_name'])
+
+            os.remove(filename)
+
+            await self.discover_firmware_files()
+
+        except Exception as e:
+            logger.exception('firmware delete failed')
+
+            response = {
+                'code': 1,
+                'error_message': str(e),
+                'result': None,
+            }
+
+        return Response(text=json.dumps(response))
+
+    async def firmware_flash(self, request):
+        response = {
+            'code': 0,
+            'error_message': '',
+            'result': None,
+        }
+
+        try:
+            node_address = request.match_info['node']
+            source = request.match_info['source']
+            file_name = request.match_info['file_name']
+
+            node_driver = self.state['nodes'][node_address]
+            node = node_driver.node
+
+            # find firmware file
+            if source == 'local':
+                file_name = os.path.join(self.firmware_directory, file_name)
+
+            else:
+                raise ValueError
+
+            await self.flash_jobs.put(
+                (False, node, file_name, )
+            )
+
+        except Exception as e:
+            logger.exception('firmware delete failed')
+
+            response = {
+                'code': 1,
+                'error_message': str(e),
+                'result': None,
+            }
+
+        return Response(text=json.dumps(response))
+
     # state (rpc) #############################################################
     async def flush_state(self):
         state = []
@@ -260,11 +441,18 @@ class LXAIOBusServer:
 
         for node_id in node_ids:
             node_driver = self.state['nodes'][node_id]
+
+            try:
+                node_info = await node_driver.node.get_info()
+
+            except Exception:
+                node_info = {}
+
             state.append([
                 node_id, {
                     'is_alive': node_driver.is_alive,
                     'driver': node_driver.__class__.__name__,
-                    'info': await node_driver.node.get_info(),
+                    'info': node_info,
                 },
             ])
 

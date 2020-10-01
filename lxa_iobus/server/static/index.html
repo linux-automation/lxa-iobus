@@ -22,7 +22,13 @@
         <div class="pure-menu pure-menu-horizontal">
           <ul class="pure-menu-list">
             <li class="pure-menu-item{{#if template=='nodes'}} pure-menu-selected{{/if}}">
-              <a href="#" class="pure-menu-link" on-click="@.set('template', 'nodes')">Nodes</a>
+              <a href="#nodes" class="pure-menu-link" on-click="@.set('template', 'nodes')">Nodes</a>
+            </li>
+            <li class="pure-menu-item{{#if template=='isp'}} pure-menu-selected{{/if}}">
+              <a href="#isp" class="pure-menu-link" on-click="@.set('template', 'isp')">ISP</a>
+            </li>
+            <li class="pure-menu-item{{#if template=='firmware-files'}} pure-menu-selected{{/if}}">
+              <a href="#firmware-files" class="pure-menu-link" on-click="@.set('template', 'firmware-files')">Firmware Files</a>
             </li>
           </ul>
         </div>
@@ -64,6 +70,14 @@
         </table>
 
         <div id="outputs">
+          <h3>Update</h3>
+          <select value="{{selected_firmware}}">
+            {{#firmware.local_files}}
+              <option value="local/{{.}}">local/{{.}}</option>
+            {{/}}
+          </select>
+          <button class="pure-button button-error" onclick="flash_firmware('{{ selected_node }}', '{{ selected_firmware }}')">Flash</button>
+
           <h3>Locator</h3>
           <button class="{{#if pin_info.locator == 1}}button-success{{/if}} pure-button" onclick="toggle_locator('{{ selected_node }}')">Locator</button>
 
@@ -112,6 +126,44 @@
           </tbody>
         </table>
       {{/if}}
+    </script>
+
+    <script id="isp" type="text/html">
+      <h3>ISP Console</h3>
+      <pre>{{#isp_console}}{{.}}
+{{/}}</pre>
+
+    </script>
+
+    <script id="firmware-files" type="text/html">
+      <h3>Firmware Files</h3>
+
+      <table class="pure-table" width="100%">
+        <thead>
+          <tr>
+            <th>Local Firmware Files</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#firmware.local_files}}
+            <tr>
+              <td>
+                {{.}}
+                <div class="pull-right">
+                  <button class="pure-button button-error" onclick="delete_firmware('{{.}}');">Delete</button>
+                </div>
+              </td>
+            </tr>
+          {{/}}
+        </tbody>
+      </table>
+
+      <h3>Upload Firmware File</h3>
+			<form action="/firmware/upload/" method="post" accept-charset="utf-8" enctype="multipart/form-data">
+				<input id="file" name="file" type="file" />
+				<input type="submit" value="Upload" class="pure-button"/>
+			</form>
+
     </script>
 
     <script src="/static/lib/jquery-3.5.1.min.js"></script>

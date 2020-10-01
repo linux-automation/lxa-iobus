@@ -20,6 +20,7 @@ parser.add_argument('interface')
 parser.add_argument('--port', type=int, default=8080)
 parser.add_argument('--host', type=str, default='localhost')
 parser.add_argument('--shell', action='store_true')
+parser.add_argument('--firmware-directory', type=str, default='firmware')
 
 parser.add_argument(
     '-l', '--log-level',
@@ -59,7 +60,7 @@ loop.set_exception_handler(handle_exception)
 app = Application()
 
 try:
-    server = LXAIOBusServer(app, loop, args.interface)
+    server = LXAIOBusServer(app, loop, args.interface, args.firmware_directory)
 
 except OSError as e:
     if e.errno == errno.ENODEV:  # can interface not available

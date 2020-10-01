@@ -13,6 +13,15 @@ function toggle_pin(node_address, pin_name) {
     update_pin_info();
 };
 
+function flash_firmware(node_address, firmware) {
+    $.post('/nodes/' + node_address + '/flash-firmware/' + firmware, {});
+    ractive.set('template', 'isp');
+};
+
+function delete_firmware(filename) {
+    $.post('/firmware/delete/' + filename, {});
+};
+
 // Ractive --------------------------------------------------------------------
 Ractive.DEBUG = false;
 
@@ -21,7 +30,7 @@ var ractive = Ractive({
     template: '#main',
     data: {
         connected: true,
-        template: 'nodes',
+        template: window.location.hash.substr(1) || 'nodes',
         dots: [],
         state: '',
     },
@@ -80,7 +89,17 @@ rpc.on('open', function(rpc) {
         ractive.set('state', data);
     };
 
+    rpc._topic_handler.isp_console = function(data) {
+        ractive.set('isp_console', data);
+    };
+
+    rpc._topic_handler.firmware = function(data) {
+        ractive.set('firmware', data);
+    };
+
     rpc.call('subscribe', 'state');
+    rpc.call('subscribe', 'isp_console');
+    rpc.call('subscribe', 'firmware');
 });
 
 rpc.connect();
