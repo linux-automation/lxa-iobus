@@ -43,6 +43,9 @@
     <script id="nodes" type="text/html">
       {{#if selected_node}}
         <button class="pure-button" id="node-info-back" on-click="@.set('selected_node', '')">Back</button>
+        {{#if node_info.info.update_name}}
+          <button class="pure-button button-error" onclick="update_node('{{ selected_node }}')">Update to {{ node_info.info.update_name }}</button>
+        {{/if}}
 
         <table id="node-info" class="pure-table">
           <tbody>
@@ -76,6 +79,9 @@
         <div id="outputs">
           <h3>Update</h3>
           <select value="{{selected_firmware}}">
+            {{#firmware.upstream_files}}
+              <option value="upstream/{{.}}">upstream/{{.}}</option>
+            {{/}}
             {{#firmware.local_files}}
               <option value="local/{{.}}">local/{{.}}</option>
             {{/}}
@@ -128,7 +134,9 @@
           <tbody>
             {{#state:node_id}}
               <tr class="{{#if state[node_id][1].is_alive}}alive{{else}}dead{{/if}}">
-                <td on-click="@.set('selected_node', state[node_id][0])">{{state[node_id][1].info.device_name}}</td>
+                <td on-click="@.set('selected_node', state[node_id][0])">
+                  {{state[node_id][1].info.device_name}} {{#if state[node_id][1].info.update_name}}<strong style="color: red">Update</strong>{{/if}}
+                </td>
                 <td>{{state[node_id][0]}}</td>
                 <td>{{state[node_id][1].driver}}</td>
               </tr>
@@ -146,27 +154,44 @@
     </script>
 
     <script id="firmware-files" type="text/html">
-      <h3>Firmware Files</h3>
-
       <table class="pure-table" width="100%">
         <thead>
           <tr>
-            <th>Local Firmware Files</th>
+            <th>Upstream Firmware Files</th>
           </tr>
         </thead>
         <tbody>
-          {{#firmware.local_files}}
+          {{#firmware.upstream_files}}
             <tr>
-              <td>
-                {{.}}
-                <div class="pull-right">
-                  <button class="pure-button button-error" onclick="delete_firmware('{{.}}');">Delete</button>
-                </div>
-              </td>
+              <td>{{.}}</td>
             </tr>
           {{/}}
         </tbody>
       </table>
+
+      {{#if firmware.local_files}}
+        <br>
+        
+        <table class="pure-table" width="100%">
+          <thead>
+            <tr>
+              <th>Local Firmware Files</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#firmware.local_files}}
+              <tr>
+                <td>
+                  {{.}}
+                  <div class="pull-right">
+                    <button class="pure-button button-error" onclick="delete_firmware('{{.}}');">Delete</button>
+                  </div>
+                </td>
+              </tr>
+            {{/}}
+          </tbody>
+        </table>
+      {{/if}}
 
       <h3>Upload Firmware File</h3>
 			<form action="/firmware/upload/" method="post" accept-charset="utf-8" enctype="multipart/form-data">

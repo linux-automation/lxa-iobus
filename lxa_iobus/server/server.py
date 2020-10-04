@@ -18,6 +18,11 @@ from lxa_iobus.lpc11xxcanisp.can_isp import CanIsp
 from lxa_iobus.server.node_drivers import drivers
 from lxa_iobus.server.nodes import Node
 
+from lxa_iobus.lpc11xxcanisp.firmware.versions import (
+    FIRMWARE_VERSIONS,
+    FIRMWARE_DIR,
+)
+
 STATIC_ROOT = os.path.join(os.path.dirname(__file__), 'static')
 logger = logging.getLogger('LXAIOBusServer')
 
@@ -74,6 +79,12 @@ class LXAIOBusServer:
 
         app.router.add_route(
             'POST',
+            '/nodes/{node}/update/',
+            self.firmware_update,
+        )
+
+        app.router.add_route(
+            'POST',
             '/firmware/upload/',
             self.firmware_upload,
         )
@@ -117,7 +128,11 @@ class LXAIOBusServer:
         self._running = False
 
     async def discover_firmware_files(self):
+        upstream_files = []
         local_files = []
+
+        for driver, (version, path) in FIRMWARE_VERSIONS.items():
+            upstream_files.append(os.path.basename(path))
 
         for i in os.listdir(self.firmware_directory):
             if i.startswith('.'):
@@ -126,6 +141,7 @@ class LXAIOBusServer:
             local_files.append(i)
 
         await self.rpc.notify('firmware', {
+            'upstream_files': upstream_files,
             'local_files': local_files,
         })
 
@@ -416,8 +432,41 @@ class LXAIOBusServer:
             if source == 'local':
                 file_name = os.path.join(self.firmware_directory, file_name)
 
+            elif source == 'upstream':
+                file_name = os.path.join(FIRMWARE_DIR, file_name)
+
             else:
-                raise ValueError
+                raise ValueError('unknown mode')
+
+            await self.flash_jobs.put(
+                (False, node, file_name, )
+            )
+
+        except Exception as e:
+            logger.exception('firmware delete failed')
+
+            response = {
+                'code': 1,
+                'error_message': str(e),
+                'result': None,
+            }
+
+        return Response(text=json.dumps(response))
+
+    async def firmware_update(self, request):
+        response = {
+            'code': 0,
+            'error_message': '',
+            'result': None,
+        }
+
+        try:
+            node_address = request.match_info['node']
+
+            node_driver = self.state['nodes'][node_address]
+            node = node_driver.node
+
+            file_name = FIRMWARE_VERSIONS[node_driver.__class__][1]
 
             await self.flash_jobs.put(
                 (False, node, file_name, )
@@ -442,10 +491,11 @@ class LXAIOBusServer:
         for node_id in node_ids:
             node_driver = self.state['nodes'][node_id]
 
+            # get node info
             try:
-                node_info = await node_driver.node.get_info()
+                node_info = await node_driver.node.get_info(node_driver)
 
-            except Exception:
+            except Exception as e:
                 node_info = {}
 
             state.append([

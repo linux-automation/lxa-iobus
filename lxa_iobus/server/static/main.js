@@ -18,6 +18,11 @@ function flash_firmware(node_address, firmware) {
     ractive.set('template', 'isp');
 };
 
+function update_node(node_address, firmware) {
+    $.post('/nodes/' + node_address + '/update/', {});
+    ractive.set('template', 'isp');
+};
+
 function delete_firmware(filename) {
     $.post('/firmware/delete/' + filename, {});
 };

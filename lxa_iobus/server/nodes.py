@@ -1,6 +1,9 @@
 import struct
+import os
 
 from canopen.sdo.exceptions import SdoCommunicationError
+
+from lxa_iobus.lpc11xxcanisp.firmware.versions import FIRMWARE_VERSIONS
 
 
 def array2int(a):
@@ -245,7 +248,7 @@ class Node:
     def invalidate_info_cache(self):
         self._info = None
 
-    async def get_info(self):
+    async def get_info(self, node_driver):
         if hasattr(self, '_info') and self._info is not None:
             return self._info
 
@@ -264,11 +267,23 @@ class Node:
             self.address, 0x100a, 0,
         )
 
+        # check for updates
+        update_name = ''
+
+        if(node_driver.__class__ in FIRMWARE_VERSIONS):
+            raw_version = software_version.decode().split(' ')[1]
+            version_tuple = tuple([int(i) for i in raw_version.split('.')])
+
+            if version_tuple < FIRMWARE_VERSIONS[node_driver.__class__][0]:
+                update_name = os.path.basename(
+                    FIRMWARE_VERSIONS[node_driver.__class__][1])
+
         self._info = {
             'device_name': device_name.decode(),
             'address': str(self.address),
             'hardware_version': hardware_version.decode(),
             'software_version': software_version.decode(),
+            'update_name': update_name,
         }
 
         return self._info
