@@ -42,13 +42,17 @@
 
     <script id="nodes" type="text/html">
       {{#if selected_node}}
-        <span id="node-info-back" on-click="@.set('selected_node', '')">&lt; Back</span>
+        <button class="pure-button" id="node-info-back" on-click="@.set('selected_node', '')">Back</button>
 
         <table id="node-info" class="pure-table">
           <tbody>
             <tr>
-              <th>Address</th>
+              <th>Name</th>
               <td>{{ selected_node }}</td>
+            </tr>
+            <tr>
+              <th>Address</th>
+              <td>{{ node_info.info.address }}</td>
             </tr>
             <tr>
               <th>Driver</th>
@@ -81,30 +85,36 @@
           <h3>Locator</h3>
           <button class="{{#if pin_info.locator == 1}}button-success{{/if}} pure-button" onclick="toggle_locator('{{ selected_node }}')">Locator</button>
 
-          <h3>Outputs</h3>
-          {{#pin_info.outputs:pin}}
-            <button class="{{#if pin_info.outputs[pin] == 1}}button-success{{/if}} pure-button" onclick="toggle_pin('{{ selected_node }}', '{{ pin }}')">{{ pin }}</button>
-          {{/}}
-
-          <h3>Inputs</h3>
-          <table class="pure-table">
-            {{#pin_info.inputs:pin}}
-              <tr>
-                <th>{{ pin }}</th>
-                <td>{{ pin_info.inputs[pin] }}</td>
-              </tr>
+          {{#if pin_info.outputs}}
+            <h3>Outputs</h3>
+            {{#pin_info.outputs:pin}}
+              <button class="{{#if pin_info.outputs[pin] == 1}}button-success{{/if}} pure-button" onclick="toggle_pin('{{ selected_node }}', '{{ pin }}')">{{ pin }}</button>
             {{/}}
-          </table>
+          {{/if}}
 
-          <h3>ADCs</h3>
-          <table class="pure-table">
-            {{#pin_info.adcs:pin}}
-              <tr>
-                <th>{{ pin }}</th>
-                <td>{{ pin_info.adcs[pin] }}</td>
-              </tr>
-            {{/}}
-          </table>
+          {{#if pin_info.inputs}}
+            <h3>Inputs</h3>
+            <table class="pure-table">
+              {{#pin_info.inputs:pin}}
+                <tr>
+                  <th>{{ pin }}</th>
+                  <td>{{ pin_info.inputs[pin] }}</td>
+                </tr>
+              {{/}}
+            </table>
+          {{/if}}
+
+          {{#if pin_info.adcs}}
+            <h3>ADCs</h3>
+            <table class="pure-table">
+              {{#pin_info.adcs:pin}}
+                <tr>
+                  <th>{{ pin }}</th>
+                  <td>{{ pin_info.adcs[pin] }}</td>
+                </tr>
+              {{/}}
+            </table>
+          {{/if}}
         </div>
       {{else}}
         <table id="node-table" class="pure-table" width="100%">

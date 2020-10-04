@@ -266,6 +266,7 @@ class Node:
 
         self._info = {
             'device_name': device_name.decode(),
+            'address': str(self.address),
             'hardware_version': hardware_version.decode(),
             'software_version': software_version.decode(),
         }
