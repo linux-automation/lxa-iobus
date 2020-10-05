@@ -77,17 +77,6 @@
         </table>
 
         <div id="outputs">
-          <h3>Update</h3>
-          <select value="{{selected_firmware}}">
-            {{#firmware.upstream_files}}
-              <option value="upstream/{{.}}">upstream/{{.}}</option>
-            {{/}}
-            {{#firmware.local_files}}
-              <option value="local/{{.}}">local/{{.}}</option>
-            {{/}}
-          </select>
-          <button class="pure-button button-error" onclick="flash_firmware('{{ selected_node }}', '{{ selected_firmware }}')">Flash</button>
-
           <h3>Locator</h3>
           <button class="{{#if pin_info.locator == 1}}button-success{{/if}} pure-button" onclick="toggle_locator('{{ selected_node }}')">Locator</button>
 
@@ -121,6 +110,25 @@
               {{/}}
             </table>
           {{/if}}
+
+          <h3>Flash</h3>
+          <strong style="color: #ca3c3c">
+            Be careful! This dialog lets you flash whatever you want,
+            without checking if the given file is valid or not.
+            <br>
+            You can brick your device here.
+          </strong>
+          <br>
+
+          <select value="{{selected_firmware}}">
+            {{#firmware.upstream_files}}
+              <option value="upstream/{{.}}">upstream/{{.}}</option>
+            {{/}}
+            {{#firmware.local_files}}
+              <option value="local/{{.}}">local/{{.}}</option>
+            {{/}}
+          </select>
+          <button class="pure-button button-error" onclick="flash_firmware('{{ selected_node }}', '{{ selected_firmware }}')">Flash</button>
         </div>
       {{else}}
         <table id="node-table" class="pure-table" width="100%">
