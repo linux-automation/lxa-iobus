@@ -86,19 +86,19 @@ class IOMuxDriver(NodeDriver):
                 channel=0,
                 bit=4,
             ),
-            'IN4': Pin(
+            'IN0': Pin(
                 node=self.node,
                 pin_type='input',
                 channel=0,
                 bit=0,
             ),
-            'IN5': Pin(
+            'IN1': Pin(
                 node=self.node,
                 pin_type='input',
                 channel=0,
                 bit=1,
             ),
-            'IN6': Pin(
+            'IN2': Pin(
                 node=self.node,
                 pin_type='input',
                 channel=0,
