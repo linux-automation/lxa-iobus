@@ -132,7 +132,7 @@ class IOMuxDriver(NodeDriver):
 
     @classmethod
     def match(cls, node):
-        if node.address.startswith('00000000.0000049a.00000001.'):
+        if node.address.startswith('00000000.00000002.00000002.'):
             return 'IOMux-{}'.format(node.address.split('.')[-1])
         return None
 
@@ -250,7 +250,7 @@ class EthMuxDriver(NodeDriver):
 
     @classmethod
     def match(cls, node):
-        if node.address.startswith('00000000.0c0ce934.534d0000.'):
+        if node.address.startswith('00000000.00000003.00000004.'):
             return 'EthMux-{}'.format(node.address.split('.')[-1])
         return None
 
