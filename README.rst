@@ -15,6 +15,181 @@ Linux Automation GmbH lxa-iobus
 lxa-iobus-server
 ----------------
 
+This packages provides a daemon which connects iobus-devices from Linux Automation 
+with test-automation tools like ``labgrid <https://github.com/labgrid-project/labgrid>``__.
+iobus is a CANopen-inspired communications protocoll on top of CAN.
+
+This packages provides the following featues:
+
+* lxa-iobus-server: This is the central daemon that manages the nodes on the bus.
+  * It provides a (human-readable) webinterface and a REST API for remote control of the nodes.
+  * It is able to update the firmware running on the devices on the bus.
+* The most recent firmware for all available iobus devices.
+* And in case something went really wrong: Tooling to manually flash new firmare onto an iobus node.
+
+System requirements
+"""""""""""""""""""
+
+The lxa-iobus-server has been developed to work on a modern Linux-based distribution.
+Additional to this the following requirements need to be meet to run the lxa-iobus-server:
+
+* Python 3.7 or later
+* on Debian: python3-virtualenv
+* SocketCAN
+* Compatible CAN device
+* git
+* optional: ``systemd`` to setup a service for lxa-iobus-server
+* optional: ``systemd`` >= 239 to bring up your CAN-device on boot
+* optional: ``make`` for easy setup of the lxa-iobus-server
+
+Quickstart
+""""""""""
+
+If you have ``make`` installed on your system you can follow this section to
+start a server.
+Make sure you have at least one CAN device on your bus an that your bus is
+terminated.
+If you connect a node to a not managed bus (as the server is not jet started)
+the network LED will blink until the node has been initialized.
+
+With this instructions you will first set up your SocketCAN device to work with
+the lxa-iobus-server.
+Afterwards you will clone this repository.
+The last step is to call ``make server`` which will create a ``python venv`` inside
+the directory and start a server that binds to ``http://localhost:8080/``.
+
+::
+
+   chris@dauntless: $ sudo ip l set can0 down && sudo ip link set can0 type can bitrate 100000 && sudo ip l set can0 up
+   chris@dauntless: $ git clone https://github.com/linux-automation/lxa-iobus.git
+   Cloning into 'lxa-iobus'...
+   remote: Enumerating objects: 476, done.
+   remote: Counting objects: 100% (476/476), done.
+   remote: Compressing objects: 100% (227/227), done.
+   remote: Total 476 (delta 257), reused 448 (delta 229), pack-reused 0
+   Receiving objects: 100% (476/476), 1.04 MiB | 2.48 MiB/s, done.
+   Resolving deltas: 100% (257/257), done.
+   chris@dauntless: $ cd lxa-iobus/
+   chris@dauntless: $ make server
+   rm -rf env && \
+   python3.7 -m venv env && \
+   . env/bin/activate && \
+   pip install -e .[full] && \
+   date > env/.created
+   Obtaining file:///home/chris/tmp/lxa-iobus
+   [...]
+   Successfully installed aenum-2.2.4 aiohttp-3.5.4 aiohttp-json-rpc-0.12.1 async-timeout-3.0.1 attrs-20.2.0 backcall-0.2.0 canopen-1.1.0 chardet-3.0.4 decorator-4.4.2 idna-2.10 ipython-6.5.0 ipython-genutils-0.2.0 jedi-0.17.2 lxa-iobus multidict-4.7.6 parso-0.7.1 pexpect-4.8.0 pickleshare-0.7.5 prompt-toolkit-1.0.18 ptyprocess-0.6.0 pygments-2.7.2 python-can-3.3.4 simplegeneric-0.8.1 six-1.15.0 traitlets-5.0.5 typing-extensions-3.7.4.3 wcwidth-0.2.5 wrapt-1.12.1 yarl-1.6.2
+   . env/bin/activate && \
+   lxa-iobus-server can0 
+   starting server on http://localhost:8080/
+
+After this step the lxa-iobus-server will start to scan the bus for connected
+iobus-compatible nodes. Depending on the number of nodes this can take up to
+30 seconds.
+Observe the status of the network LED on your io-bus compatible node.
+Once the node has been initialized by the server the LED stops blinking.
+
+Now navigate your web browser to ``http://localhost:8080/``.
+Your node should be listed under ``nodes``.
+Your lxa-iobus-server is now ready for use.
+
+If you want the server to be started at system startup take a look into the
+installation section.
+
+Installation
+""""""""""""
+
+The permanent installation of the lxa-iobus-server consists of two parts:
+
+1) Bring up the SocketCAN-device at system start.
+2) Setup the lxa-iobus-server and make it start at system start.
+
+For both steps clone this repository:
+
+::
+
+   chris@dauntless: $ git clone https://github.com/linux-automation/lxa-iobus.git
+   Cloning into 'lxa-iobus'...
+   remote: Enumerating objects: 476, done.
+   remote: Counting objects: 100% (476/476), done.
+   remote: Compressing objects: 100% (227/227), done.
+   remote: Total 476 (delta 257), reused 448 (delta 229), pack-reused 0
+   Receiving objects: 100% (476/476), 1.04 MiB | 2.48 MiB/s, done.
+   Resolving deltas: 100% (257/257), done.
+   chris@dauntless: $ cd lxa-iobus/
+
+Afterwards you can continue with the following chapters.
+
+Setup SocketCAN device with systemd-networkd
+''''''''''''''''''''''''''''''''''''''''''''
+
+In this step ``systemd-networkd`` is used to set up the SocketCAN device at
+system startup.
+If you are not using ``systemd-networkd`` skip to the next chapter.
+
+This installation method requires you to have systemd with a version of at
+least 239 on your system and a SocketCAN device must be available.
+
+You can check the status using:
+
+:: 
+
+   chris@dauntless: $ ip link
+   1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+       link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+   [...]
+   185: can0: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UP mode DEFAULT group default qlen 10
+       link/can 
+
+In this example the SocketCAN device is ``can0``.
+
+To setup the interface using ``systemd-networkd`` copy the rules
+``80_can0-iobus.link`` and ``80_can0-iobus.network``
+from ``./contrib/systemd/`` to ``/etc/systemd/network/``.
+Make sure to update the ``[Match]`` sections in both files and the ``[Link]``
+section in the ``.link`` file to match the name of your SocketCAN device.
+
+This files will do the following:
+
+* Use the SocketCAN device ``can0``
+* Rename it to ``can0-iobus``. Especially on
+  systems with multiple interfaces this makes it a lot easier to identify
+  the interface used for the lxa-iobus-server.
+* Set the baudrate to 100.000 kBoud/s.
+* Bring the interface up.
+
+To apply this changes restart ``systemd-networkd`` using
+``systemctl restart systemd-networkd``.
+Afterwards make sure your device has been renamed and is up using ``ip link``.
+
+Setup SocketCAN device manually
+'''''''''''''''''''''''''''''''
+
+If you are using another way of setting up your network you may skip this
+step and make sure you meet the following requirements instead:
+
+* Set the baudrate to 100.000 kBoud/s
+* Bring the interface up
+* Optionally: Rename the interface with the suffix ``-iobus``. Especially on
+  systems with multiple interfaces this makes it a lot easier to identify
+  the interface used for the lxa-iobus-server.
+
+Setup lxa-iobus-server
+''''''''''''''''''''''
+
+In this chapter ``systemd`` will be used to start the lxa-iobus-server.
+
+To setup a systemd-service use the example ``.service`` -unit provided
+in ``./contrib/systemd/lxa-iobus.service``.
+To install the service copy this file to ``/etc/systemd/system/``.
+
+Make sure to set the correct SocketCAN interface in the service file.
+
+Afterwards the service can be started using ``systemctl start lxa-iobus.service``.
+If no errors are shown in ``systemctl status lxa-iobus.service`` the web interface
+should be available on ``http://localhost:8080``.
+
+
 REST API
 """"""""
 
@@ -40,67 +215,3 @@ Examples
     <<< {"code": 0, "error_message": "", "result": null}
 
 
-lpc11xxcanisp
--------------
-
-This is a Prototyp implementation.
-
-This python module provides accsess to the LPC11C24 CAN ISP.
-
-
-Setup
-"""""
-
-::
-
-    python3 -m venv venv
-    source venv/bin/activate
-    pip install canopen
-
-
-Read firmware
-'''''''''''''
-
-::
-
-    $ python can_isp.py read filename
-
-
-Write firmware
-''''''''''''''
-
-::
-
-    $ python can_isp.py write filename
-
-Execute binary from RAM
-'''''''''''''''''''''''
-
-::
-
-    $ python can_isp.py exec filename
-
-In loader you find two binary:
- * reset.bin to reset the MCU after flashing the firmware
- * soft_reset to jump into the application in flash
-   This is needed in case you jumpered the Boot0/Bootsel pin
-
-::
-
-    $ python can_isp.py exec loader/reset.bin
-    $ python can_isp.py exec loader/soft_reset.bin
-
-
-Reboot into bootloader
-''''''''''''''''''''''
-
-If the user code is already running and it uses our bootloader endpoint, you
-can reboot it into bootloader mode with.
-
-
-::
-
-    python invoke_isp.py
-
-Please note that the will switch every node on the CAN bus into bootloader
-mode. So make sure you have only one connected.
