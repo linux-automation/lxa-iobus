@@ -1,4 +1,4 @@
-PYTHON=python3.7
+PYTHON=python3
 PYTHON_VENV=env
 INTERFACE=can0
 
