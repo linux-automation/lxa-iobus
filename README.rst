@@ -16,7 +16,7 @@ lxa-iobus-server
 ----------------
 
 This packages provides a daemon which connects iobus-devices from Linux Automation 
-with test-automation tools like ``labgrid <https://github.com/labgrid-project/labgrid>``__.
+with test-automation tools like `labgrid <https://github.com/labgrid-project/labgrid>`__.
 iobus is a CANopen-inspired communications protocoll on top of CAN.
 
 This packages provides the following featues:
@@ -192,6 +192,9 @@ should be available on ``http://localhost:8080``.
 
 REST API
 """"""""
+
+The REST API can be used to build your own lab automation on top of the lxa-iobus.
+Take a look at the following examples for all the available endpoints.
 
 Examples
 ''''''''
