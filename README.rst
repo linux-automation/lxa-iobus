@@ -217,4 +217,85 @@ Examples
     >>> curl -d "value=0" -X POST http://localhost:8080/nodes/IOMux-5a6ecbea/pins/led/
     <<< {"code": 0, "error_message": "", "result": null}
 
+Troubleshooting: Server dies with can.CanError: Failed to transmit: [Errno 105] No buffer space available
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+This problem occurs when the SocketCAN device is not able to successfully transmit any
+CAN-Messages.
+There are several common solutions:
+
+Only one CAN-Node on the bus
+''''''''''''''''''''''''''''
+
+For a functioning CAN bus at least two nodes are needed.
+This is due to the reason that every message on the bus must be acknowledged by at
+least one other node.
+Without at least one other CAN device on the bus no ACK signal is generated and thus
+the same message is re-transmitted forever.
+In this case the iobus-server queues more and more frames until eventually the queue is full.
+
+**Solution:** Attach at least one CAN node (e.g. an LXA iobus node) to the bus.
+
+Synchronization Jump Width (SJW) too small
+''''''''''''''''''''''''''''''''''''''''''
+
+Currently SocketCAN initializes every device with a synchronization jump with (``sjw``) of 1.
+
+A CAN receiver is able to synchronize to the exact timing of the sending side.
+The value of ``sjw`` defines the maximum number of time quanta ``Tq`` that the symbol timing of a received
+CAN message is allowed to be wrong.
+A time quanta defines the length of every sub-symbol the receiver is capable of sampling.
+
+If a ``tq`` is small on a given hardware the maximum allowed difference in bit timing is small, too.
+
+**Solution**: Increase the value of ``sjw``.
+
+First check the duration of ``tq`` and the value of the ``bitrate``.
+
+::
+
+     $ ip --details link show can0_iobus
+     5: can0_iobus: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UP mode DEFAULT group default qlen 10
+       link/can  promiscuity 0 minmtu 0 maxmtu 0
+       can state ERROR-PASSIVE (berr-counter tx 128 rx 0) restart-ms 100
+         bitrate 100000 sample-point 0.875
+         tq 50 prop-seg 87 phase-seg1 87 phase-seg2 25 sjw 1
+         peak_canfd: tseg1 1..256 tseg2 1..128 sjw 1..128 brp 1..1024 brp-inc 1
+         peak_canfd: dtseg1 1..32 dtseg2 1..16 dsjw 1..16 dbrp 1..1024 dbrp-inc 1
+         clock 80000000numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535
+
+Line 5 gives the currently configured ``bitrate`` (100.000 baud).
+This leads to a symbol duration of ``Tsym = 10 µs``.
+Line 6 gives the values for ``tq`` (50 ns) and ``sjw`` (1).
+
+This means that the maximum timing error is allowed to be ``Terr = sjw * tq = 50 ns``
+or ``Perr = Terr / Tsym * 100 = 0.5 %``!
+
+To increase the tolerance to eg. ``5 %`` increase ``sjw`` to:
+``sjw = Tsym * 5 % / Tq = 10``.
+
+This can be set to the hardware using the following command:
+(Note that all other values but ``sjw`` are copied from the status output above.)
+
+::
+
+    $ ip link set can0_iobus type can tq 50 prop-seg 87 phase-seg1 87 phase-seg2 25 sjw 10
+
+Bus not terminated
+''''''''''''''''''
+
+CAN transceivers use current sources to transmit signals onto the bus but
+measure a (differential) voltage for receiving.
+This means that there must be some *termination resistor* on the bus to
+achieve the current-to-voltage transition.
+
+**Solution**: Add a 120 Ohm termination resistor between ``CAN high`` and ``CAN low``.
+
+*Note*:
+If the total length of your bus does not exceed a few meters a single resistor is
+usually sufficient and there is no need to place a termination resistor on every
+end of the bus.
+
+If the total length of the bus exceeds a few meters the bus should be made up of
+a twisted pair wire and a terminal resistor on either end of the bus should be used.
+In this case the bus should be laid out in a *line topology*.
