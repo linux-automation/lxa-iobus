@@ -15,7 +15,7 @@ Linux Automation GmbH lxa-iobus
 lxa-iobus-server
 ----------------
 
-This packages provides a daemon which connects iobus-devices from Linux Automation 
+This packages provides a daemon which connects iobus-devices from Linux Automation
 with test-automation tools like `labgrid <https://github.com/labgrid-project/labgrid>`__.
 iobus is a CANopen-inspired communications protocol on top of CAN.
 
@@ -80,7 +80,7 @@ the directory and start a server that binds to ``http://localhost:8080/``.
    [...]
    Successfully installed aenum-2.2.4 aiohttp-3.5.4 aiohttp-json-rpc-0.12.1 async-timeout-3.0.1 attrs-20.2.0 backcall-0.2.0 canopen-1.1.0 chardet-3.0.4 decorator-4.4.2 idna-2.10 ipython-6.5.0 ipython-genutils-0.2.0 jedi-0.17.2 lxa-iobus multidict-4.7.6 parso-0.7.1 pexpect-4.8.0 pickleshare-0.7.5 prompt-toolkit-1.0.18 ptyprocess-0.6.0 pygments-2.7.2 python-can-3.3.4 simplegeneric-0.8.1 six-1.15.0 traitlets-5.0.5 typing-extensions-3.7.4.3 wcwidth-0.2.5 wrapt-1.12.1 yarl-1.6.2
    . env/bin/activate && \
-   lxa-iobus-server can0 
+   lxa-iobus-server can0
    starting server on http://localhost:8080/
 
 After this step the lxa-iobus-server will start to scan the bus for connected
@@ -132,14 +132,14 @@ least 239 on your system and a SocketCAN device must be available.
 
 You can check the status using:
 
-:: 
+::
 
    $ ip link
    1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
        link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
    [...]
    185: can0: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UP mode DEFAULT group default qlen 10
-       link/can 
+       link/can
 
 In this example the SocketCAN device is ``can0``.
 
@@ -239,18 +239,37 @@ In this case the iobus-server queues more and more frames until eventually the q
 Synchronization Jump Width (SJW) too small
 ''''''''''''''''''''''''''''''''''''''''''
 
-Currently SocketCAN initializes every device with a synchronization jump with (``sjw``) of 1.
+The CAN-Bus protocol is designed to allow baudrate offsets of a few percent
+between bus nodes. This is especially relevant when a bus contains nodes without
+precise crystal-based clock-sources.
+Synchronization is performed on the receiving side of a CAN-frame by
+monitoring the actual and expected timing of bit transitions seen on the bus,
+and adjusting the bit-sampling of subsequent bits accordingly.
 
-A CAN receiver is able to synchronize to the exact timing of the sending side.
-The value of ``sjw`` defines the maximum number of time quanta ``Tq`` that the symbol timing of a received
-CAN message is allowed to be wrong.
-A time quanta defines the length of every sub-symbol the receiver is capable of sampling.
+The generation of CAN-timings is based on a base clock, that is sub-divided
+using counters, to determine the sample points for reception and the
+signal transition points for sending. These counter timings make use of units of time called
+time quanta ``tq``, on Linux these time quanta are given in nanoseconds.
 
-If a ``tq`` is small on a given hardware the maximum allowed difference in bit timing is small, too.
+One parameter that is specified in terms of time quanta is the synchronization jump
+width (``sjw``), a parameter determining the maximum amount of baudrate synchronization
+performed during reception of a CAN-frame.
+Currently SocketCAN initializes every device with a synchronization jump width (``sjw``)
+of 1 time quantum.
 
-**Solution**: Increase the value of ``sjw``.
+As the length of a time quantum ``tq`` varies widely between different CAN-controllers
+this results in maximum amount of baudrate-synchronization performed by default also
+varying widely between CAN-controllers. On some CAN-controllers the amount of synchronization
+allowed by the default setup is not sufficient to use lxa-iobus devices, leading to
+frames being rejected by the CAN-controller.
 
-First check the duration of ``tq`` and the value of the ``bitrate``.
+**Solution**: Use a ``sjw`` relative the other bit-timings instead of a fixed value of 1.
+
+Lxa-iobus-devices are tested at a ``sjw`` of 5% of one bit-time.
+To determine the current bit-timings the ``can0_iobus`` interface should first
+be configured to the desired baudrate of 100.000 baud/s, e.g. by using systemd-networkd.
+The resulting bit timings are calculated automatically by the Linux kernel
+and can then be displayed using the ``ip`` command:
 
 ::
 
@@ -262,24 +281,19 @@ First check the duration of ``tq`` and the value of the ``bitrate``.
          tq 50 prop-seg 87 phase-seg1 87 phase-seg2 25 sjw 1
          peak_canfd: tseg1 1..256 tseg2 1..128 sjw 1..128 brp 1..1024 brp-inc 1
          peak_canfd: dtseg1 1..32 dtseg2 1..16 dsjw 1..16 dbrp 1..1024 dbrp-inc 1
-         clock 80000000numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535
+         clock 80000000 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535
 
-Line 5 gives the currently configured ``bitrate`` (100.000 baud).
-This leads to a symbol duration of ``Tsym = 10 µs``.
-Line 6 gives the values for ``tq`` (50 ns) and ``sjw`` (1).
+Shown in line 6 are the timing-parameters ``tq``, ``prop-seg``, ``phase-seg1``, ``phase-seg2``
+and ``sjw``. One bit-time consists of ``1 + prop-seg + phase-seg1 + phase-seg2`` time quata.
+The ``sjw`` should thus be adjusted to a value of ``sjw = ⌊0.05 * (1 + prop-seg + phase-seg1 + phase-seg2)⌋ = 10``.
 
-This means that the maximum timing error is allowed to be ``Terr = sjw * tq = 50 ns``
-or ``Perr = Terr / Tsym * 100 = 0.5 %``!
-
-To increase the tolerance to eg. ``5 %`` increase ``sjw`` to:
-``sjw = Tsym * 5 % / Tq = 10``.
-
-This can be set to the hardware using the following command:
+The interface can be re-configured accordingly using the command:
 (Note that all other values but ``sjw`` are copied from the status output above.)
 
 ::
 
     $ ip link set can0_iobus type can tq 50 prop-seg 87 phase-seg1 87 phase-seg2 25 sjw 10
+
 
 Bus not terminated
 ''''''''''''''''''
