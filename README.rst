@@ -17,15 +17,15 @@ lxa-iobus-server
 
 This packages provides a daemon which connects iobus-devices from Linux Automation 
 with test-automation tools like `labgrid <https://github.com/labgrid-project/labgrid>`__.
-iobus is a CANopen-inspired communications protocoll on top of CAN.
+iobus is a CANopen-inspired communications protocol on top of CAN.
 
-This packages provides the following featues:
+This packages provides the following features:
 
 * lxa-iobus-server: This is the central daemon that manages the nodes on the bus.
-  * It provides a (human-readable) webinterface and a REST API for remote control of the nodes.
+  * It provides a (human-readable) web interface and a REST API for remote control of the nodes.
   * It is able to update the firmware running on the devices on the bus.
 * The most recent firmware for all available iobus devices.
-* And in case something went really wrong: Tooling to manually flash new firmare onto an iobus node.
+* And in case something went really wrong: Tooling to manually flash new firmware onto an iobus node.
 
 System requirements
 """""""""""""""""""
@@ -46,7 +46,7 @@ Quickstart
 """"""""""
 
 If you have ``make`` installed on your system you can follow this section to
-start a server.
+start the server.
 Make sure you have at least one CAN device on your bus an that your bus is
 terminated.
 If you connect a node to a not managed bus (as the server is not jet started)
@@ -60,8 +60,8 @@ the directory and start a server that binds to ``http://localhost:8080/``.
 
 ::
 
-   chris@dauntless: $ sudo ip l set can0 down && sudo ip link set can0 type can bitrate 100000 && sudo ip l set can0 up
-   chris@dauntless: $ git clone https://github.com/linux-automation/lxa-iobus.git
+   $ sudo ip l set can0 down && sudo ip link set can0 type can bitrate 100000 && sudo ip l set can0 up
+   $ git clone https://github.com/linux-automation/lxa-iobus.git
    Cloning into 'lxa-iobus'...
    remote: Enumerating objects: 476, done.
    remote: Counting objects: 100% (476/476), done.
@@ -69,8 +69,8 @@ the directory and start a server that binds to ``http://localhost:8080/``.
    remote: Total 476 (delta 257), reused 448 (delta 229), pack-reused 0
    Receiving objects: 100% (476/476), 1.04 MiB | 2.48 MiB/s, done.
    Resolving deltas: 100% (257/257), done.
-   chris@dauntless: $ cd lxa-iobus/
-   chris@dauntless: $ make server
+   $ cd lxa-iobus/
+   $ make server
    rm -rf env && \
    python3.7 -m venv env && \
    . env/bin/activate && \
@@ -86,7 +86,7 @@ the directory and start a server that binds to ``http://localhost:8080/``.
 After this step the lxa-iobus-server will start to scan the bus for connected
 iobus-compatible nodes. Depending on the number of nodes this can take up to
 30 seconds.
-Observe the status of the network LED on your io-bus compatible node.
+Observe the status of the network LED on your iobus compatible node.
 Once the node has been initialized by the server the LED stops blinking.
 
 Now navigate your web browser to ``http://localhost:8080/``.
@@ -108,7 +108,7 @@ For both steps clone this repository:
 
 ::
 
-   chris@dauntless: $ git clone https://github.com/linux-automation/lxa-iobus.git
+   $ git clone https://github.com/linux-automation/lxa-iobus.git
    Cloning into 'lxa-iobus'...
    remote: Enumerating objects: 476, done.
    remote: Counting objects: 100% (476/476), done.
@@ -116,7 +116,7 @@ For both steps clone this repository:
    remote: Total 476 (delta 257), reused 448 (delta 229), pack-reused 0
    Receiving objects: 100% (476/476), 1.04 MiB | 2.48 MiB/s, done.
    Resolving deltas: 100% (257/257), done.
-   chris@dauntless: $ cd lxa-iobus/
+   $ cd lxa-iobus/
 
 Afterwards you can continue with the following chapters.
 
@@ -134,7 +134,7 @@ You can check the status using:
 
 :: 
 
-   chris@dauntless: $ ip link
+   $ ip link
    1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
        link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
    [...]
@@ -155,7 +155,7 @@ This files will do the following:
 * Rename it to ``can0-iobus``. Especially on
   systems with multiple interfaces this makes it a lot easier to identify
   the interface used for the lxa-iobus-server.
-* Set the baudrate to 100.000 kBoud/s.
+* Set the baudrate to 100.000 baud/s.
 * Bring the interface up.
 
 To apply this changes restart ``systemd-networkd`` using
@@ -168,7 +168,7 @@ Setup SocketCAN device manually
 If you are using another way of setting up your network you may skip this
 step and make sure you meet the following requirements instead:
 
-* Set the baudrate to 100.000 kBoud/s
+* Set the baudrate to 100.000 baud/s
 * Bring the interface up
 * Optionally: Rename the interface with the suffix ``-iobus``. Especially on
   systems with multiple interfaces this makes it a lot easier to identify
