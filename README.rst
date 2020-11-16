@@ -155,7 +155,7 @@ This files will do the following:
 * Rename it to ``can0-iobus``. Especially on
   systems with multiple interfaces this makes it a lot easier to identify
   the interface used for the lxa-iobus-server.
-* Set the baudrate to 100.000 baud/s.
+* Set the bitrate to 100.000 bit/s.
 * Bring the interface up.
 
 To apply this changes restart ``systemd-networkd`` using
@@ -168,7 +168,7 @@ Setup SocketCAN device manually
 If you are using another way of setting up your network you may skip this
 step and make sure you meet the following requirements instead:
 
-* Set the baudrate to 100.000 baud/s
+* Set the bitrate to 100.000 bit/s
 * Bring the interface up
 * Optionally: Rename the interface with the suffix ``-iobus``. Especially on
   systems with multiple interfaces this makes it a lot easier to identify
@@ -239,7 +239,7 @@ In this case the iobus-server queues more and more frames until eventually the q
 Synchronization Jump Width (SJW) too small
 ''''''''''''''''''''''''''''''''''''''''''
 
-The CAN-Bus protocol is designed to allow baudrate offsets of a few percent
+The CAN-Bus protocol is designed to allow bitrate offsets of a few percent
 between bus nodes. This is especially relevant when a bus contains nodes without
 precise crystal-based clock-sources.
 Synchronization is performed on the receiving side of a CAN-frame by
@@ -252,13 +252,13 @@ signal transition points for sending. These counter timings make use of units of
 time quanta ``tq``, on Linux these time quanta are given in nanoseconds.
 
 One parameter that is specified in terms of time quanta is the synchronization jump
-width (``sjw``), a parameter determining the maximum amount of baudrate synchronization
+width (``sjw``), a parameter determining the maximum amount of bitrate synchronization
 performed during reception of a CAN-frame.
 Currently SocketCAN initializes every device with a synchronization jump width (``sjw``)
 of 1 time quantum.
 
 As the length of a time quantum ``tq`` varies widely between different CAN-controllers
-this results in maximum amount of baudrate-synchronization performed by default also
+this results in maximum amount of bitrate-synchronization performed by default also
 varying widely between CAN-controllers. On some CAN-controllers the amount of synchronization
 allowed by the default setup is not sufficient to use lxa-iobus devices, leading to
 frames being rejected by the CAN-controller.
@@ -267,7 +267,7 @@ frames being rejected by the CAN-controller.
 
 Lxa-iobus-devices are tested at a ``sjw`` of 5% of one bit-time.
 To determine the current bit-timings the ``can0_iobus`` interface should first
-be configured to the desired baudrate of 100.000 baud/s, e.g. by using systemd-networkd.
+be configured to the desired bitrate of 100.000 bit/s, e.g. by using systemd-networkd.
 The resulting bit timings are calculated automatically by the Linux kernel
 and can then be displayed using the ``ip`` command:
 
