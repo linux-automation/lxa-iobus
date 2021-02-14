@@ -26,7 +26,7 @@ setup(
     license='Apache License 2.0',
     packages=find_packages(),
     install_requires=[
-        'canopen',
+        'python-can',
         'janus',
     ],
     extras_require=EXTRAS_REQUIRE,
