@@ -12,6 +12,7 @@ import errno
 from aiohttp.web import Application, run_app
 
 from lxa_iobus.server.server import LXAIOBusServer
+from lxa_iobus.network import LxaNetwork
 
 # parse command line arguments
 parser = ArgumentParser()
@@ -21,6 +22,7 @@ parser.add_argument('--port', type=int, default=8080)
 parser.add_argument('--host', type=str, default='localhost')
 parser.add_argument('--shell', action='store_true')
 parser.add_argument('--firmware-directory', type=str, default='firmware')
+parser.add_argument('--lss-address-cache-file', type=str, default='')
 
 parser.add_argument(
     '-l', '--log-level',
@@ -43,29 +45,33 @@ logging.basicConfig(level=log_level)
 
 # setup server
 loop = asyncio.get_event_loop()
-
-
-def handle_exception(loop, context):
-    traceback.print_exception(
-        context['exception'].__class__,
-        context['exception'],
-        context['exception'].__traceback__,
-    )
-
-    server.shutdown()
-    os.kill(os.getpid(), signal.SIGTERM)
-
-
-loop.set_exception_handler(handle_exception)
 app = Application()
 
+# setup lxa network
+network = LxaNetwork(
+    loop=loop,
+    interface=args.interface,
+    lss_address_cache_file=args.lss_address_cache_file,
+)
+
+app['network'] = network
+
+
+async def shutdown_network(app):
+    await app['network'].shutdown()
+
+app.on_shutdown.append(shutdown_network)
+loop.create_task(network.run())
+
+# start server
 try:
-    server = LXAIOBusServer(app, loop, args.interface, args.firmware_directory)
+    server = LXAIOBusServer(app, loop, network, args.firmware_directory)
 
 except OSError as e:
     if e.errno == errno.ENODEV:  # can interface not available
         exit('interface {} not available'.format(args.interface))
 
+loop.create_task(server.flush_state_periodicly())
 
 if args.shell:
     def _start_shell():
@@ -73,10 +79,6 @@ if args.shell:
         import IPython
 
         config = Config()
-
-        # this is needed to avoid sqlite errors while running in
-        # a multithreading environment
-        config.HistoryAccessor.enabled = False
 
         IPython.embed(config=config)
 

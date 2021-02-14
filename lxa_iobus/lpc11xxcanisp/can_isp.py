@@ -1,11 +1,10 @@
 from functools import partial
 from datetime import datetime
+import asyncio
 import logging
 import struct
 import time
 import os
-
-import canopen
 
 from lxa_iobus.lpc11xxcanisp import loader
 
@@ -157,9 +156,9 @@ class CanIsp:
             0x1430102B: "LPC11C24FBD48/301"
             }
 
-    def __init__(self, server, node):
+    def __init__(self, server, network):
         self.server = server
-        self.node = node
+        self.network = network
 
         self._console = []
 
@@ -200,24 +199,39 @@ class CanIsp:
 
     def _send(self, index: int, subindex: int, size, num: int):
         """Sends data to the MCU and converts it"""
-        try:
-            self.node.sdo.download(index, subindex, self.pack(num, size=size))
-        except canopen.sdo.exceptions.SdoAbortedError as e:
-            if IspSdoAbortedError.is_known(e.code):
-                raise IspSdoAbortedError(e.code)
-            raise e
+
+        isp_node = self.network.get_isp_node()
+
+        coroutine = isp_node.sdo_write(
+            index,
+            subindex,
+            self.pack(num, size=size),
+        )
+
+        future = asyncio.run_coroutine_threadsafe(
+            coroutine,
+            loop=self.network.loop,
+        )
+
+        return future.result()
 
     def send(self, name, value):
         self._send(*self.object_directory[name], value)
 
     def _get(self, index: int, subindex: int, size):
         """Gets data from the MCU and converts it"""
-        try:
-            return self.unpack(self.node.sdo.upload(index, subindex), size)
-        except canopen.sdo.exceptions.SdoAbortedError as e:
-            if IspSdoAbortedError.is_known(e.code):
-                raise IspSdoAbortedError(e.code)
-            raise e
+
+        isp_node = self.network.get_isp_node()
+        coroutine = isp_node.sdo_read(index, subindex)
+
+        future = asyncio.run_coroutine_threadsafe(
+            coroutine,
+            loop=self.network.loop,
+        )
+
+        result = future.result()
+
+        return self.unpack(result)
 
     def get(self, name):
         return self._get(*self.object_directory[name])

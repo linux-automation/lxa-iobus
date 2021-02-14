@@ -27,6 +27,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'canopen',
+        'janus',
     ],
     extras_require=EXTRAS_REQUIRE,
     scripts=[

@@ -1,6 +1,7 @@
 PYTHON=python3
 PYTHON_VENV=env
 INTERFACE=can0
+LSS_ADDRESS_CACHE_FILE=lss-address-cache.json
 
 $(PYTHON_VENV)/.created: setup.py
 	rm -rf $(PYTHON_VENV) && \
@@ -16,4 +17,7 @@ clean:
 
 server: env
 	. $(PYTHON_VENV)/bin/activate && \
-	lxa-iobus-server $(INTERFACE) $(args)
+	lxa-iobus-server \
+		$(INTERFACE) \
+		--lss-address-cache-file=$(LSS_ADDRESS_CACHE_FILE) \
+		$(args)
