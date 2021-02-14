@@ -143,9 +143,9 @@
             {{#state:node_id}}
               <tr class="{{#if state[node_id][1].is_alive}}alive{{else}}dead{{/if}}">
                 <td on-click="@.set('selected_node', state[node_id][0])">
-                  {{state[node_id][1].info.device_name}} {{#if state[node_id][1].info.update_name}}<strong style="color: red">Update</strong>{{/if}}
+                  {{state[node_id][0]}} {{#if state[node_id][1].info.update_name}}<strong style="color: red">Update</strong>{{/if}}
                 </td>
-                <td>{{state[node_id][0]}}</td>
+                <td>{{state[node_id][1].info.address}}</td>
                 <td>{{state[node_id][1].driver}}</td>
               </tr>
             {{/}}
