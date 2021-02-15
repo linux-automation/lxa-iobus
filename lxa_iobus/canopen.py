@@ -1,5 +1,7 @@
 import struct
 
+from time import time
+
 from can import Message
 
 
@@ -104,6 +106,7 @@ def gen_lss_switch_mode_global_message(lss_mode):
         raise ValueError
 
     return Message(
+        timestamp=time(),
         arbitration_id=LSS_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE,
         data=struct.pack(
             '<BBxxxxxx',
@@ -122,6 +125,7 @@ def gen_lss_configure_node_id_message(node_id):
         raise ValueError
 
     return Message(
+        timestamp=time(),
         arbitration_id=LSS_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE,
         data=struct.pack(
             '<BBxxxxxx',
@@ -134,6 +138,7 @@ def gen_lss_configure_node_id_message(node_id):
 
 def gen_invalidate_node_ids_message():
     return Message(
+        timestamp=time(),
         arbitration_id=LSS_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE,
         data=struct.pack(
             '<BBxxxxxx',
@@ -166,6 +171,7 @@ def gen_lss_fast_scan_message(id_number, bit_checked, lss_sub, lss_next):
         raise ValueError
 
     return Message(
+        timestamp=time(),
         arbitration_id=LSS_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE,
         data=struct.pack(
             '<BLBBB',
@@ -223,6 +229,7 @@ def gen_sdo_initiate_download(node_id, type, index, sub_index, data):
     n = 4 - len(data)
 
     return Message(
+        timestamp=time(),
         arbitration_id=SDO_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE_PREFIX | node_id,
         data=struct.pack(
             '<BHB4s',
@@ -266,6 +273,7 @@ def gen_sdo_segment_download(node_id, toggle, complete, seg_data):
     n = 7 - len(seg_data)
 
     return Message(
+        timestamp=time(),
         arbitration_id=SDO_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE_PREFIX | node_id,
         data=struct.pack(
             '<B7s',
@@ -288,6 +296,7 @@ def gen_sdo_initiate_upload(node_id, index, sub_index):
         raise ValueError
 
     return Message(
+        timestamp=time(),
         arbitration_id=SDO_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE_PREFIX | node_id,
         data=struct.pack(
             '<BHB4s',
@@ -318,6 +327,7 @@ def gen_sdo_segment_upload(node_id, toggle):
         toggle = 0
 
     return Message(
+        timestamp=time(),
         arbitration_id=SDO_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE_PREFIX | node_id,
         data=struct.pack(
             '<B7s',
