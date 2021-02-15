@@ -256,10 +256,10 @@ def gen_sdo_segment_download(node_id, toggle, complete, seg_data):
     else:
         complete = 0
 
-    if len(seg_data) in range(0, 8):
+    if not len(seg_data) in range(0, 8):
         raise ValueError
 
-    n = 4 - len(seg_data)
+    n = 7 - len(seg_data)
 
     return Message(
         arbitration_id=SDO_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE_PREFIX | node_id,

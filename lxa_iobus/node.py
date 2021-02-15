@@ -10,7 +10,7 @@ from lxa_iobus.node_drivers import drivers
 from lxa_iobus.utils import array2int
 
 from lxa_iobus.canopen import (
-    SDO_TRANSFER_TYPE_DATA_NO_SIZE,
+    SDO_TRANSFER_TYPE_DATA_WITH_SIZE,
     gen_sdo_initiate_download,
     gen_sdo_segment_download,
     gen_sdo_initiate_upload,
@@ -202,7 +202,7 @@ class LxaNode:
                     index=index,
                     sub_index=sub_index,
                     data=data,
-                    type=SDO_TRANSFER_TYPE_DATA_NO_SIZE,
+                    type=SDO_TRANSFER_TYPE_DATA_WITH_SIZE,
                 )
 
                 response = await self._send_sdo_message(
@@ -299,7 +299,7 @@ class LxaNode:
                         error_code=response.error_code,
                     )
 
-                if not response.type == 'initiate_download':
+                if not response.type == 'download_segment':
                     raise Exception(
                         'Got wrong answer: {}'.format(response.type))
 
