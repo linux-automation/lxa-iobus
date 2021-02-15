@@ -14,6 +14,29 @@ from aiohttp.web import Application, run_app
 from lxa_iobus.server.server import LXAIOBusServer
 from lxa_iobus.network import LxaNetwork
 
+import signal
+def trace_handler(num, frame):
+    print("\nDumping all stacks:\n")
+    import sys, threading, traceback
+    for th in threading.enumerate():
+        print(th)
+        traceback.print_stack(sys._current_frames()[th.ident])
+        print()
+    import asyncio
+    for task in asyncio.all_tasks():
+        if not task.done():
+            task.print_stack()
+            print()
+    #import os
+    #os.kill(os.getpid(), signal.SIGKILL)
+signal.signal(signal.SIGQUIT, trace_handler)
+
+def exit_handler(num, frame):
+    print("\nExiting...\n")
+    import os
+    os.kill(os.getpid(), signal.SIGKILL)
+signal.signal(signal.SIGINT, exit_handler)
+
 # parse command line arguments
 parser = ArgumentParser()
 
@@ -91,7 +114,7 @@ print('starting server on http://{}:{}/'.format(args.host, args.port))
 
 try:
     run_app(app=app, host=args.host, port=args.port,
-            handle_signals=True, print=lambda *args, **kwargs: None)
+            handle_signals=False, print=lambda *args, **kwargs: None)
 
 except KeyboardInterrupt:
     server.shutdown()
