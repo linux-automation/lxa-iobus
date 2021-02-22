@@ -7,7 +7,7 @@ import lxa_iobus
 
 EXTRAS_REQUIRE = {
     'server': [
-        'aiohttp-json-rpc==0.12.1',
+        'aiohttp-json-rpc==0.13.3',
     ],
     'shell': [
         'ipython<7',
