@@ -23,7 +23,7 @@ SDO_TRANSFER_TYPE_SIZE = 0b01
 # The length is stored in n and data in the data field
 SDO_TRANSFER_TYPE_DATA_WITH_SIZE = 0b11
 
-# No size is given and must be inverted from package size
+# No size is given and must be inverted from packet size
 SDO_TRANSFER_TYPE_DATA_NO_SIZE = 0b10
 
 SDO_ABORT_CODES = {
@@ -382,7 +382,7 @@ def parse_sdo_message(message):
                 # The length is stored in n and data in the data field
                 (1, 1): 'DataWithSize',
 
-                # No size is given and must be inverted from package size
+                # No size is given and must be inverted from packet size
                 (1, 0): 'DataNoSize',
             }[transfer_type, indicates_size]
 

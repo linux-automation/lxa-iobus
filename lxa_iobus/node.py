@@ -106,7 +106,7 @@ class LxaNode:
                     sub_index=response.subindex,
                     error_code=response.error_code
                 )
-            # Not the package we were expecting
+            # Not the packet we were expecting
             if not response.type == 'initiate_upload':
                 raise Exception('Got wrong answer: {}'.format(response.type))
 
@@ -120,11 +120,11 @@ class LxaNode:
                     ),
                 )
 
-            # We get a package where the size field is used
+            # We get a packet where the size field is used
             if response.readable_transfer_type == 'DataWithSize':
                 return response.data[0:4-response.number_of_bytes_not_used]
 
-            # We got a package data uses the package length as size
+            # We got a packet data uses the packet length as size
             # Is not used in the firmware
             if response.readable_transfer_type == 'DataNoSize':
                 return response.data
@@ -138,7 +138,7 @@ class LxaNode:
 
             logger.debug('Long SDO read: size {}'.format(transfer_size))
 
-            PACKAGE_SIZE = 7
+            PACKET_SIZE = 7
             collected_data = b''
             toggle = False
 
@@ -179,7 +179,7 @@ class LxaNode:
                 # Flip toggle
                 toggle ^= True
 
-                seg_data_end = PACKAGE_SIZE-response.number_of_bytes_not_used
+                seg_data_end = PACKET_SIZE-response.number_of_bytes_not_used
                 seg_data = response.seg_data[0:seg_data_end]
                 collected_data += seg_data
                 transfer_size -= len(seg_data)
@@ -259,18 +259,18 @@ class LxaNode:
             if not response.type == 'initiate_download':
                 raise Exception('Got wrong answer: {}'.format(response.type))
 
-            PACKAGE_SIZE = 7
+            PACKET_SIZE = 7
             segment = 0
             toggle = False
 
             while transfer_size > 0:
-                offset = segment*PACKAGE_SIZE
-                length = min(transfer_size, PACKAGE_SIZE)
+                offset = segment*PACKET_SIZE
+                length = min(transfer_size, PACKET_SIZE)
 
-                # Is this last package
+                # Is this last packet
                 complete = False
 
-                if length < PACKAGE_SIZE:
+                if length < PACKET_SIZE:
                     complete = True
 
                 if len(data) == offset+length:
