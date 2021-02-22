@@ -19,42 +19,46 @@ SDO_PROTCOL_IDENTIFIER_SLAVE_TO_MASTER = range(0x581, 0x5ff + 1)
 
 # The length of the data is stored in the data field
 SDO_TRANSFER_TYPE_SIZE = 0b01
+
 # The length is stored in n and data in the data field
 SDO_TRANSFER_TYPE_DATA_WITH_SIZE = 0b11
+
 # No size is given and must be inverted from package size
 SDO_TRANSFER_TYPE_DATA_NO_SIZE = 0b10
 
-SDO_ABORT_CODES = { 0x05030000: "Toggle bit not alternated",
-    0x05040000: "SDO protocol timed out",
-    0x05040001: "Client/server command specifier not valid or unknown",
-    0x05040002: "Invalid block size",
-    0x05040003: "Invalid sequence number",
-    0x05040004: "CRC error",
-    0x05040005: "Out of memory",
-    0x06010000: "Unsupported access to an object",
-    0x06010001: "Attempt to read a write only object",
-    0x06010002: "Attempt to write a read only object",
-    0x06020000: "Object does not exist in the object dictionary",
-    0x06040041: "Object cannot be mapped to the PDO",
-    0x06040042: "The number and length of the objects to be mapped would exceed PDO length",
-    0x06040043: "General parameter incompatibility reason",
-    0x06040047: "General internal incompatibility in the device",
-    0x06060000: "Access failed due to an hardware error",
-    0x06070010: "Data type does not match, length of service parameter does not match",
-    0x06070012: "Data type does not match, length of service parameter too high",
-    0x06070013: "Data type does not match, length of service parameter too low",
-    0x06090011: "Sub-index does not exist",
-    0x06090030: "Invalid value for parameter",
-    0x06090031: "Value of parameter written too high",
-    0x06090032: "Value of parameter written too low",
-    0x06090036: "Maximum value is less than minimum value",
-    0x060A0023: "Resource not available: SDO connection",
-    0x08000000: "General error",
-    0x08000020: "Data cannot be transferred or stored to the application",
-    0x08000021: "Data cannot be transferred or stored to the application because of local control",
-    0x08000022: "Data cannot be transferred or stored to the application because of the present device state",
-    0x08000023: "Object dictionary dynamic generation fails or no object dictionary is present",
-    0x08000024: "No data available"}
+SDO_ABORT_CODES = {
+    0x05030000: 'Toggle bit not alternated',
+    0x05040000: 'SDO protocol timed out',
+    0x05040001: 'Client/server command specifier not valid or unknown',
+    0x05040002: 'Invalid block size',
+    0x05040003: 'Invalid sequence number',
+    0x05040004: 'CRC error',
+    0x05040005: 'Out of memory',
+    0x06010000: 'Unsupported access to an object',
+    0x06010001: 'Attempt to read a write only object',
+    0x06010002: 'Attempt to write a read only object',
+    0x06020000: 'Object does not exist in the object dictionary',
+    0x06040041: 'Object cannot be mapped to the PDO',
+    0x06040042: 'The number and length of the objects to be mapped would exceed PDO length',  # NOQA
+    0x06040043: 'General parameter incompatibility reason',
+    0x06040047: 'General internal incompatibility in the device',
+    0x06060000: 'Access failed due to an hardware error',
+    0x06070010: 'Data type does not match, length of service parameter does not match',  # NOQA
+    0x06070012: 'Data type does not match, length of service parameter too high',  # NOQA
+    0x06070013: 'Data type does not match, length of service parameter too low',  # NOQA
+    0x06090011: 'Sub-index does not exist',
+    0x06090030: 'Invalid value for parameter',
+    0x06090031: 'Value of parameter written too high',
+    0x06090032: 'Value of parameter written too low',
+    0x06090036: 'Maximum value is less than minimum value',
+    0x060A0023: 'Resource not available: SDO connection',
+    0x08000000: 'General error',
+    0x08000020: 'Data cannot be transferred or stored to the application',
+    0x08000021: 'Data cannot be transferred or stored to the application because of local control',  # NOQA
+    0x08000022: 'Data cannot be transferred or stored to the application because of the present device state',  # NOQA
+    0x08000023: 'Object dictionary dynamic generation fails or no object dictionary is present',  # NOQA
+    0x08000024: 'No data available',
+}
 
 
 class LSS_MODE:
