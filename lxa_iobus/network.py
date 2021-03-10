@@ -381,7 +381,7 @@ class LxaNetwork:
                 return response
 
         # Do the compliede fast scan algo
-        return await self._fast_scan(start, mask)
+        return await self._fast_scan()
 
     def _gen_canopen_node_id(self):
         for i in range(1, 129):
