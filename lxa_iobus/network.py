@@ -88,7 +88,7 @@ class LxaNetwork:
     async def load_lss_address_cache(self):
         def _load_lss_address_cache():
             if not self.lss_address_cache_file:
-                logger.debug('no lss address cache file set. skip loading')
+                logger.info('no lss address cache file set. skip loading')
 
                 return
 
@@ -210,7 +210,7 @@ class LxaNetwork:
                         pass
 
             except Exception as e:
-                logger.debug('rx: crashed {}'.format(repr(e)))
+                logger.exception('rx: crashed')
 
         logger.debug('rx: shutdown')
 
@@ -485,7 +485,7 @@ class LxaNetwork:
                         response = None
 
                     if not response:
-                        logger.debug(
+                        logger.warning(
                             'lss_ping: node %s does not respond', node)
 
                         self.nodes.pop(node_id)
