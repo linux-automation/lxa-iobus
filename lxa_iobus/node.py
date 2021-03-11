@@ -333,13 +333,15 @@ class LxaNode:
         # check for updates
         update_name = ''
 
-        if(self.driver.__class__ in FIRMWARE_VERSIONS):
+        firmware = FIRMWARE_VERSIONS.get(self.driver.__class__)
+        if firmware:
             raw_version = software_version.decode().split(' ')[1]
             version_tuple = tuple([int(i) for i in raw_version.split('.')])
 
-            if version_tuple < FIRMWARE_VERSIONS[self.driver.__class__][0]:
-                update_name = os.path.basename(
-                    FIRMWARE_VERSIONS[self.driver.__class__][1])
+            if version_tuple < firmware[0]:
+                update_name = os.path.basename(firmware[1])
+                logger.info('Found firmware update for {} to {}'.format(
+                    self, '.'.join(str(x) for x in firmware[0])))
 
         self._info = {
             'device_name': device_name.decode(),
