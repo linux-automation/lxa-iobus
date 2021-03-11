@@ -485,7 +485,9 @@ class LXAIOBusServer:
             try:
                 node_info = await node.get_info()
 
-            except Exception:
+            except Exception as e:
+                logger.warning("Exception during get_info() for node {}: {}".format(
+                    node, repr(e)))
                 node_info = {}
 
             state.append([
