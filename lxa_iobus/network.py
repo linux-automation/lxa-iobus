@@ -459,6 +459,9 @@ class LxaNetwork:
                     node_id=node_id,
                 )
 
+                logger.info("fast_scan: Created new node with id {} for {}".format(
+                    node_id, lss))
+
                 self._sdo_queues[node_id] = Queue()
 
                 response = await self.lss_request(
