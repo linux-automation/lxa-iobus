@@ -88,7 +88,7 @@ class LxaNetwork:
     async def load_lss_address_cache(self):
         def _load_lss_address_cache():
             if not self.lss_address_cache_file:
-                logger.debug('no lss address cache file set. skip loading')
+                logger.info('no lss address cache file set. skip loading')
 
                 return
 
@@ -210,7 +210,7 @@ class LxaNetwork:
                         pass
 
             except Exception as e:
-                logger.debug('rx: crashed {}'.format(repr(e)))
+                logger.exception('rx: crashed')
 
         logger.debug('rx: shutdown')
 
@@ -265,9 +265,9 @@ class LxaNetwork:
 
     def create_mask_from_list(self, lss_ids):
         """
-        Takes a list fo LSS adresses and generates a mask representing all
-        bits that are differen between them. Returns knowen bits (that are the
-        same beween all adresses) and a mask intication the differences
+        Takes a list of LSS addresses and generates a mask representing all
+        bits that are different between them. Returns known bits (that are the
+        same between all addresses) and a mask indication the differences
         """
 
         mask = [0, 0, 0, 0]
@@ -285,10 +285,10 @@ class LxaNetwork:
 
     async def _fast_scan(self, start=None, mask=None):
         """
-        Implements the fast scan algo.
+        Implements the fast scan algorithm.
 
-        fast_scan_request: fast_scan_request methode
-        start: Start value for the lss address (default: [0, 0, 0, 0])
+        fast_scan_request: fast_scan_request method
+        start: Start value for the LSS address (default: [0, 0, 0, 0])
         mask: Only bits that are 0 are going to be tested.
               (dafault: [0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff])
 
@@ -354,7 +354,7 @@ class LxaNetwork:
                                         mask=None):
 
         """
-        Implements a fast scan that first trys to search for nodes from a list.
+        Implements a fast scan that first tries to search for nodes from a list.
         Then in a range and then all addresses
         """
 
@@ -373,15 +373,15 @@ class LxaNetwork:
             if response:
                 return response
 
-        # Try to find a node from strat mask
+        # Try to find a node from start mask
         if start is not None and mask is not None:
             response = await self._fast_scan(start, mask)
 
             if response:
                 return response
 
-        # Do the compliede fast scan algo
-        return await self._fast_scan(start, mask)
+        # Do the complete fast scan algorithm
+        return await self._fast_scan()
 
     def _gen_canopen_node_id(self):
         for i in range(1, 129):
@@ -407,7 +407,7 @@ class LxaNetwork:
             )
 
             if not response:
-                logger.debug("fast_scan: Seting not ID not working")
+                logger.debug("fast_scan: Setting not ID not working")
 
             response = await self.lss_request(
                 gen_lss_switch_mode_global_message(LSS_MODE.OPERATION),
@@ -451,13 +451,16 @@ class LxaNetwork:
                 )
 
                 if not response:
-                    logger.debug("fast_scan: Seting not ID not working")
+                    logger.debug("fast_scan: Setting not ID not working")
 
                 self.nodes[node_id] = LxaNode(
                     lxa_network=self,
                     lss_address=lss,
                     node_id=node_id,
                 )
+
+                logger.info("fast_scan: Created new node with id {} for {}".format(
+                    node_id, lss))
 
                 self._sdo_queues[node_id] = Queue()
 
@@ -466,7 +469,7 @@ class LxaNetwork:
                 )
 
                 if not response:
-                    logger.debug("fast_scan: Seting not ID not working")
+                    logger.debug("fast_scan: Setting not ID not working")
 
         except LxaShutdown:
             logger.debug('fast_scan: shutdown')
@@ -485,7 +488,7 @@ class LxaNetwork:
                         response = None
 
                     if not response:
-                        logger.debug(
+                        logger.warning(
                             'lss_ping: node %s does not respond', node)
 
                         self.nodes.pop(node_id)

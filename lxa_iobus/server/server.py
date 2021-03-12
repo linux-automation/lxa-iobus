@@ -261,7 +261,7 @@ class LXAIOBusServer:
                     pin_info['outputs'][pin_name] = value
 
                 elif pin.pin_type == 'adc':
-                    pin_info['adcs'][pin_name] = value
+                    pin_info['adcs'][pin_name] = "{:.3f}".format(value)
 
             response['result'] = pin_info
 
@@ -485,7 +485,9 @@ class LXAIOBusServer:
             try:
                 node_info = await node.get_info()
 
-            except Exception:
+            except Exception as e:
+                logger.warning("Exception during get_info() for node {}: {}".format(
+                    node, repr(e)))
                 node_info = {}
 
             state.append([
