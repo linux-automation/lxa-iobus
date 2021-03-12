@@ -261,7 +261,7 @@ class LXAIOBusServer:
                     pin_info['outputs'][pin_name] = value
 
                 elif pin.pin_type == 'adc':
-                    pin_info['adcs'][pin_name] = value
+                    pin_info['adcs'][pin_name] = "{:.3f}".format(value)
 
             response['result'] = pin_info
 
