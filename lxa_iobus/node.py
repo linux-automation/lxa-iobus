@@ -34,7 +34,7 @@ class LxaNode:
         self._lock = asyncio.Lock()
 
         self.address = '.'.join(
-            ['{0:08}'.format(i) for i in self.lss_address]
+            ['{:08x}'.format(i) for i in self.lss_address]
         )
 
         self.inputs = []
