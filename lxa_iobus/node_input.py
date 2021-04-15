@@ -1,6 +1,6 @@
 import struct
 
-from lxa_iobus.utils import array2int, int2array4
+from lxa_iobus.utils import array2int, int2array
 
 
 class Input:
@@ -39,7 +39,7 @@ class Output(Input):
 
     async def write(self, mask, data):
         self.output_state = (self.output_state & (~mask)) | (data & mask)
-        data = int2array4(((mask & 0xffff) << 16) | (data & 0xffff))
+        data = int2array(((mask & 0xffff) << 16) | (data & 0xffff))
         data = bytearray(data)
 
         await self.node.sdo_write(self.INDEX, (self.channel*2+2), data)
