@@ -23,6 +23,13 @@ DEFAULT_TIMEOUT = 1
 
 logger = logging.getLogger('lxa_iobus.node')
 
+VENDOR_VERSION_FIELDS = (
+    (0x2001, 0, 'protocol_version', int),
+    (0x2001, 1, 'board_version', int),
+    (0x2001, 2, 'serial_string', str),
+    (0x2001, 3, 'vendor_name', str),
+    (0x2001, 5, 'notes', str),
+)
 
 class LxaNode:
     def __init__(self, lxa_network, lss_address, node_id):
@@ -369,6 +376,23 @@ class LxaNode:
             tmp = await self.sdo_read(0x2000, i+1)
             tmp = array2int(tmp)
             protocols.append(tmp)
+
+        # Vendor-Specific version information
+        if 0x2001 in protocols:
+            for (sdo, sub_idx, field_name, field_type) in VENDOR_VERSION_FIELDS:
+                # Do not fail when one of the reads to these
+                # vendor-specific fields fails.
+                try:
+                    value = await self.sdo_read(sdo, sub_idx)
+                except SDO_Abort:
+                    continue
+
+                if field_type is int:
+                    value = array2int(value)
+                elif field_type is str:
+                    value = value.decode()
+
+                self._info[field_name] = value
 
         # Inputs
         if 0x2101 in protocols:
