@@ -245,7 +245,7 @@ class LXAIOBusServer:
             node = self.network.get_node_by_name(node_name)
 
             pin_info = {
-                'locator': await node.get_locator_state(),
+                'locator': node.locator_state,
                 'inputs': {},
                 'outputs': {},
                 'adcs': {},
@@ -320,14 +320,9 @@ class LXAIOBusServer:
             node_name = request.match_info['node']
             node = self.network.get_node_by_name(node_name)
 
-            state = await node.get_locator_state()
-
-            if state == 1:
-                new_state = 0
-
-            else:
-                new_state = 1
-
+            # The locator state is updated by periodic pings
+            # The current state may thus be stale by up to a second or so.
+            new_state = not node.locator_state
             await node.set_locator_state(new_state)
 
         except Exception as e:
@@ -492,6 +487,7 @@ class LXAIOBusServer:
 
             state.append([
                 node.name, {
+                    'locator': node.locator_state,
                     'driver': node_driver.__class__.__name__,
                     'info': node_info,
                 },

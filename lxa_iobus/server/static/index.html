@@ -141,7 +141,7 @@
           </thead>
           <tbody>
             {{#state:node_id}}
-              <tr>
+              <tr {{#if state[node_id][1].locator}}class="locator_highlight"{{/if}}>
                 <td on-click="@.set('selected_node', state[node_id][0])">
                   {{state[node_id][0]}} {{#if state[node_id][1].info.update_name}}<strong style="color: red">Update</strong>{{/if}}
                 </td>

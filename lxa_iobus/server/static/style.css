@@ -92,7 +92,12 @@
     cursor: pointer;
 }
 
-#node-table tbody tr{
+#node-table tbody tr {
+    color: black;
+    background-color: #d9ffcb;
+}
+
+#node-table tbody tr.locator_highlight {
     color: white;
     background-color: #5caa3e;
 }
