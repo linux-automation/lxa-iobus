@@ -492,7 +492,6 @@ class LXAIOBusServer:
 
             state.append([
                 node.name, {
-                    'is_alive': True,
                     'driver': node_driver.__class__.__name__,
                     'info': node_info,
                 },

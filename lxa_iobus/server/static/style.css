@@ -92,14 +92,9 @@
     cursor: pointer;
 }
 
-#node-table tr.alive {
+#node-table tbody tr{
     color: white;
     background-color: #5caa3e;
-}
-
-#node-table tr.dead {
-    color: white;
-    background-color: #b73636;
 }
 
 #node-info-back {
