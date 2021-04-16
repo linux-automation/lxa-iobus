@@ -20,6 +20,11 @@ class Pin:
         return pin_state
 
     async def write(self, value):
+        if self.pin_type != 'output':
+            raise RuntimeError(
+                'Attemped to write to an {} channel'.format(self.pin_type)
+            )
+
         value = value << self.bit
         mask = 1 << self.bit
 
