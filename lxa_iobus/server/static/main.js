@@ -13,6 +13,12 @@ function toggle_pin(node_address, pin_name) {
     update_pin_info();
 };
 
+function get_firmware_files() {
+    $.getJSON('/firmware/').done(function(data) {
+	ractive.set('firmware', data);
+    });
+}
+
 function flash_firmware(node_address, firmware) {
     $.post('/nodes/' + node_address + '/flash-firmware/' + firmware, {});
     ractive.set('template', 'isp');
@@ -24,7 +30,9 @@ function update_node(node_address, firmware) {
 };
 
 function delete_firmware(filename) {
-    $.post('/firmware/delete/' + filename, {});
+    $.post('/firmware/delete/' + filename, {}).done(function() {
+	get_firmware_files()
+    });
 };
 
 // Ractive --------------------------------------------------------------------
@@ -98,13 +106,8 @@ rpc.on('open', function(rpc) {
         ractive.set('isp_console', data);
     };
 
-    rpc._topic_handler.firmware = function(data) {
-        ractive.set('firmware', data);
-    };
-
     rpc.call('subscribe', 'state');
     rpc.call('subscribe', 'isp_console');
-    rpc.call('subscribe', 'firmware');
 });
 
 rpc.connect();
@@ -125,6 +128,8 @@ function update_pin_info() {
     });
 
 };
+
+get_firmware_files();
 
 setInterval(function() {
     update_pin_info();

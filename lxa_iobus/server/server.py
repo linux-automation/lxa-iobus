@@ -77,6 +77,12 @@ class LXAIOBusServer:
         )
 
         app.router.add_route(
+            'GET',
+            '/firmware/',
+            self.get_firmware_files,
+        )
+
+        app.router.add_route(
             'POST',
             '/firmware/upload/',
             self.firmware_upload,
@@ -97,9 +103,6 @@ class LXAIOBusServer:
             network=network,
         )
 
-        # discover firmware files in firmware directory
-        self.loop.create_task(self.discover_firmware_files())
-
         # flash worker
         self._running = True
         self.flash_jobs = asyncio.Queue()
@@ -107,24 +110,6 @@ class LXAIOBusServer:
 
     def shutdown(self):
         self._running = False
-
-    async def discover_firmware_files(self):
-        upstream_files = []
-        local_files = []
-
-        for driver, (version, path) in FIRMWARE_VERSIONS.items():
-            upstream_files.append(os.path.basename(path))
-
-        for i in os.listdir(self.firmware_directory):
-            if i.startswith('.'):
-                continue
-
-            local_files.append(i)
-
-        await self.rpc.notify('firmware', {
-            'upstream_files': upstream_files,
-            'local_files': local_files,
-        })
 
     async def flash_worker(self):
         while self._running:
@@ -342,6 +327,26 @@ class LXAIOBusServer:
         return Response(text=json.dumps(response))
 
     # firmware views ##########################################################
+    async def get_firmware_files(self, request):
+        upstream_files = []
+        local_files = []
+
+        for driver, (version, path) in FIRMWARE_VERSIONS.items():
+            upstream_files.append(os.path.basename(path))
+
+        for i in os.listdir(self.firmware_directory):
+            if i.startswith('.'):
+                continue
+
+            local_files.append(i)
+
+        response = {
+            'upstream_files': upstream_files,
+            'local_files': local_files,
+        }
+
+        return Response(text=json.dumps(response))
+
     async def firmware_upload(self, request):
         response = {
             'code': 0,
@@ -359,8 +364,6 @@ class LXAIOBusServer:
 
             with open(abs_filename, 'wb+') as f:
                 f.write(file_content)
-
-            await self.discover_firmware_files()
 
             return HTTPFound('/#firmware-files')
 
@@ -387,8 +390,6 @@ class LXAIOBusServer:
                                     request.match_info['file_name'])
 
             os.remove(filename)
-
-            await self.discover_firmware_files()
 
         except Exception as e:
             logger.exception('firmware delete failed')

@@ -10,11 +10,11 @@ FIRMWARE_VERSIONS = {
         os.path.join(FIRMWARE_DIR, 'ptxtac-S03_CAN_GPIO.bin'),
     ),
     IOMuxDriver: (
-        (0, 3, 0),
+        (0, 4, 0),
         os.path.join(FIRMWARE_DIR, 'lxatac_can_io-t01.bin'),
     ),
     EthMuxDriver: (
-        (0, 2, 0),
+        (0, 3, 0),
         os.path.join(FIRMWARE_DIR, 'ethmux-S01.bin'),
     ),
 }
