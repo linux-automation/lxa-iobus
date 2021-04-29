@@ -365,7 +365,7 @@ class LxaNode:
         if 0x2101 in protocols:
             channel_count = await self.sdo_read(0x2101, 0)
 
-            channel_count = int(array2int(channel_count)/2)
+            channel_count = array2int(channel_count) // 2
 
             for i in range(channel_count):
                 channel = Input(self.address, i, self)
@@ -376,7 +376,7 @@ class LxaNode:
         # Output
         if 0x2100 in protocols:
             channel_count = await self.sdo_read(0x2100, 0)
-            channel_count = int(array2int(channel_count)/2)
+            channel_count = array2int(channel_count) // 2
 
             for i in range(channel_count):
                 channel = Output(self.address, i, self)
@@ -387,7 +387,7 @@ class LxaNode:
         # ADCs
         if 0x2adc in protocols:
             channel_count = await self.sdo_read(0x2adc, 0)
-            channel_count = int(array2int(channel_count))
+            channel_count = array2int(channel_count)
 
             for i in range(channel_count):
                 channel = ADC(self.address, i, self)
