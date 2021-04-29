@@ -40,6 +40,7 @@ class LxaNode:
         self.inputs = []
         self.outputs = []
         self.adcs = []
+        self.locator_state = False
 
         for driver_class in drivers:
             name = driver_class.match(self)
@@ -315,11 +316,19 @@ class LxaNode:
 
     # public API ##############################################################
     async def ping(self, timeout=DEFAULT_TIMEOUT):
-        return await self.sdo_read(
-            index=0x2000,
-            sub_index=0,
-            timeout=timeout,
-        )
+        try:
+            raw_state = await self.sdo_read(
+                index=0x210c,
+                sub_index=1,
+                timeout=timeout,
+            )
+
+            self.locator_state = (array2int(raw_state) != 0)
+
+            return True
+
+        except TimeoutError:
+            return False
 
     async def get_info(self):
         if hasattr(self, '_info') and self._info is not None:
@@ -396,19 +405,11 @@ class LxaNode:
 
         return self._info
 
-    async def get_locator_state(self):
-        raw_locator_state = await self.sdo_read(0x210c, 1)
-
-        return array2int(raw_locator_state)
-
     async def set_locator_state(self, state):
-        if state:
-            state = b'\x01\x00\x00\x00'
+        cmd = b'\x01\x00\x00\x00' if state else b'\x00\x00\x00\x00'
 
-        else:
-            state = b'\x00\x00\x00\x00'
-
-        await self.sdo_write(0x210c, 1, state)
+        await self.sdo_write(0x210c, 1, cmd)
+        self.locator_state = state
 
     async def invoke_isp(self):
         try:

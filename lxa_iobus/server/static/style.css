@@ -92,14 +92,14 @@
     cursor: pointer;
 }
 
-#node-table tr.alive {
-    color: white;
-    background-color: #5caa3e;
+#node-table tbody tr {
+    color: black;
+    background-color: #d9ffcb;
 }
 
-#node-table tr.dead {
+#node-table tbody tr.locator_highlight {
     color: white;
-    background-color: #b73636;
+    background-color: #5caa3e;
 }
 
 #node-info-back {

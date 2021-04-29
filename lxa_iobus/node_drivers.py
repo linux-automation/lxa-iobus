@@ -48,10 +48,6 @@ class NodeDriver:
 
         return self._pins
 
-    @property
-    def is_alive(self):
-        return self.node.is_alive
-
 
 class IOMuxDriver(NodeDriver):
     def _get_pins(self):

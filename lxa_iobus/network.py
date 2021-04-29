@@ -481,13 +481,7 @@ class LxaNetwork:
                     if node_id == 125:  # ISP
                         continue
 
-                    try:
-                        response = await node.ping()
-
-                    except TimeoutError:
-                        response = None
-
-                    if not response:
+                    if not await node.ping():
                         logger.warning(
                             'lss_ping: node %s does not respond', node)
 
