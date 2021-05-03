@@ -57,10 +57,22 @@
               <th>Address</th>
               <td>{{ node_info.info.address }}</td>
             </tr>
+            {{#if node_info.info.serial_string }}
+              <tr>
+                <th>Serial</th>
+                <td>{{ node_info.info.serial_string }}</td>
+              </tr>
+            {{/if}}
             <tr>
               <th>Driver</th>
               <td>{{ node_info.driver }}</td>
             </tr>
+            {{#if node_info.info.vendor_name }}
+	      <tr>
+		<th>Vendor</th>
+		<td>{{ node_info.info.vendor_name }}</td>
+	      </tr>
+            {{/if}}
             <tr>
               <th>Device Name</th>
               <td>{{ node_info.info.device_name }}</td>
@@ -179,7 +191,7 @@
 
       {{#if firmware.local_files}}
         <br>
-        
+
         <table class="pure-table" width="100%">
           <thead>
             <tr>
