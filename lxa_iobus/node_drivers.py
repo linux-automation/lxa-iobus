@@ -112,7 +112,7 @@ class PTXIOMuxDriver(NodeDriver):
     LSS_VENDOR = 0
     LSS_PRODUCT = 4
     LSS_REVISON = 1
-    NAME = 'PTXIOMux-00004.'
+    NAME_PREFIX = 'PTXIOMux-00004.'
 
     def _get_pins(self):
         return {
