@@ -68,10 +68,10 @@
               <td>{{ node_info.driver }}</td>
             </tr>
             {{#if node_info.info.vendor_name }}
-	      <tr>
-		<th>Vendor</th>
-		<td>{{ node_info.info.vendor_name }}</td>
-	      </tr>
+              <tr>
+                <th>Vendor</th>
+                <td>{{ node_info.info.vendor_name }}</td>
+              </tr>
             {{/if}}
             <tr>
               <th>Device Name</th>
@@ -123,24 +123,26 @@
             </table>
           {{/if}}
 
-          <h3>Flash</h3>
-          <strong style="color: #ca3c3c">
-            Be careful! This dialog lets you flash whatever you want,
-            without checking if the given file is valid or not.
+          {{#if firmware.allow_custom_firmware}}
+            <h3>Flash</h3>
+            <strong style="color: #ca3c3c">
+              Be careful! This dialog lets you flash whatever you want,
+              without checking if the given file is valid or not.
+              <br>
+              You can brick your device here.
+            </strong>
             <br>
-            You can brick your device here.
-          </strong>
-          <br>
 
-          <select value="{{selected_firmware}}">
-            {{#firmware.upstream_files}}
-              <option value="upstream/{{.}}">upstream/{{.}}</option>
-            {{/}}
-            {{#firmware.local_files}}
-              <option value="local/{{.}}">local/{{.}}</option>
-            {{/}}
-          </select>
-          <button class="pure-button button-error" onclick="flash_firmware('{{ selected_node }}', '{{ selected_firmware }}')">Flash</button>
+            <select value="{{selected_firmware}}">
+              {{#firmware.upstream_files}}
+                <option value="upstream/{{.}}">upstream/{{.}}</option>
+              {{/}}
+              {{#firmware.local_files}}
+                <option value="local/{{.}}">local/{{.}}</option>
+              {{/}}
+            </select>
+            <button class="pure-button button-error" onclick="flash_firmware('{{ selected_node }}', '{{ selected_firmware }}')">Flash</button>
+          {{/if}}
         </div>
       {{else}}
         <table id="node-table" class="pure-table" width="100%">
@@ -189,35 +191,36 @@
         </tbody>
       </table>
 
-      {{#if firmware.local_files}}
-        <br>
-
-        <table class="pure-table" width="100%">
-          <thead>
-            <tr>
-              <th>Local Firmware Files</th>
-            </tr>
-          </thead>
-          <tbody>
-            {{#firmware.local_files}}
+      {{#if firmware.allow_custom_firmware}}
+        {{#if firmware.local_files}}
+          <br>
+          <table class="pure-table" width="100%">
+            <thead>
               <tr>
-                <td>
-                  {{.}}
-                  <div class="pull-right">
-                    <button class="pure-button button-error" onclick="delete_firmware('{{.}}');">Delete</button>
-                  </div>
-                </td>
+                <th>Local Firmware Files</th>
               </tr>
-            {{/}}
-          </tbody>
-        </table>
-      {{/if}}
+            </thead>
+            <tbody>
+              {{#firmware.local_files}}
+                <tr>
+                  <td>
+                    {{.}}
+                    <div class="pull-right">
+                      <button class="pure-button button-error" onclick="delete_firmware('{{.}}');">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              {{/}}
+            </tbody>
+          </table>
+        {{/if}}
 
-      <h3>Upload Firmware File</h3>
-			<form action="/firmware/upload/" method="post" accept-charset="utf-8" enctype="multipart/form-data">
-				<input id="file" name="file" type="file" />
-				<input type="submit" value="Upload" class="pure-button"/>
-			</form>
+        <h3>Upload Firmware File</h3>
+        <form action="/firmware/upload/" method="post" accept-charset="utf-8" enctype="multipart/form-data">
+          <input id="file" name="file" type="file" />
+          <input type="submit" value="Upload" class="pure-button"/>
+        </form>
+      {{/if}}
 
     </script>
 
