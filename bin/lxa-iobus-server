@@ -46,11 +46,35 @@ signal.signal(signal.SIGINT, exit_handler)
 parser = ArgumentParser()
 
 parser.add_argument('interface')
-parser.add_argument('--port', type=int, default=8080)
-parser.add_argument('--host', type=str, default='localhost')
-parser.add_argument('--shell', action='store_true')
-parser.add_argument('--firmware-directory', type=str, default='firmware')
-parser.add_argument('--lss-address-cache-file', type=str, default='')
+parser.add_argument(
+    '--port',
+    type=int,
+    default=8080,
+    help='Port to serve on. Defaults to 8080',
+)
+parser.add_argument(
+    '--host',
+    type=str,
+    default='localhost',
+    help='Host to bind to. Defaults to \'localhost\'',
+)
+parser.add_argument(
+    '--shell',
+    action='store_true',
+    help='Embeds an ipython shell for easy debugging',
+)
+parser.add_argument(
+    '--firmware-directory',
+    type=str,
+    default='firmware',
+    help='Directory where uploaded firmware is stored',
+)
+parser.add_argument(
+    '--lss-address-cache-file',
+    type=str,
+    default='',
+    help='LSS addresses cache as json. Reduces startup time for known nodes.',
+)
 
 parser.add_argument(
     '-l', '--log-level',
