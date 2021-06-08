@@ -455,7 +455,7 @@ class LXAIOBusServer:
             )
 
         except Exception as e:
-            logger.exception('firmware delete failed')
+            logger.exception('Firmware flashing failed')
 
             response = {
                 'code': 1,
@@ -483,7 +483,7 @@ class LXAIOBusServer:
             )
 
         except Exception as e:
-            logger.exception('firmware delete failed')
+            logger.exception('Firmware update failed')
 
             response = {
                 'code': 1,
