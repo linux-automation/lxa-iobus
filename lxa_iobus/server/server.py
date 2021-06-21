@@ -288,7 +288,10 @@ class LXAIOBusServer:
                     pin_info['adcs'][pin_name] = "{:.3f}".format(value)
 
             response['result'] = pin_info
-            logger.info(
+
+            # This view is polled by the web-interface.
+            # To keep the log nice and clean we will only log this to debug.
+            logger.debug(
                     "get_pin_info: requested pin info for for node %s",
                     node_name,
             )
