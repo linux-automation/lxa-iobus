@@ -206,6 +206,12 @@ class LXAIOBusServer:
             node = self.network.get_node_by_name(node_name)
 
             response['result'] = await node.driver.pins[pin_name].read()
+            logger.info(
+                    "get_pin: read pin %s on node %s: %s",
+                    pin_name,
+                    node_name,
+                    response['result'],
+            )
 
         except Exception as e:
             logger.exception("get_pin failed")
@@ -249,8 +255,14 @@ class LXAIOBusServer:
                     pin_info['adcs'][pin_name] = "{:.3f}".format(value)
 
             response['result'] = pin_info
+            logger.info(
+                    "get_pin_info: requested pin info for for node %s",
+                    node_name,
+            )
+
 
         except Exception as e:
+            logger.exception("get_pin_info failed")
             response = {
                 'code': 1,
                 'error_message': str(e),
@@ -283,6 +295,12 @@ class LXAIOBusServer:
                 value = int(value)
 
             response['result'] = await pin.write(value)
+            logger.info(
+                    "set_pin: set pin %s on node %s to %s",
+                    pin_name,
+                    node_name,
+                    value,
+            )
 
         except Exception as e:
             logger.exception("set_pin failed")
@@ -309,6 +327,11 @@ class LXAIOBusServer:
             # The current state may thus be stale by up to a second or so.
             new_state = not node.locator_state
             await node.set_locator_state(new_state)
+            logger.info(
+                    "toggle_locator: set locator on node %s to %s",
+                    node_name,
+                    new_state,
+            )
 
         except Exception as e:
             logger.exception('toggle locator failed')
