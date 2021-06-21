@@ -183,6 +183,17 @@ class LXAIOBusServer:
             for name, pin in node.driver.pins.items():
                 response['result'].append(name)
 
+        except ValueError as e:
+            logger.warn(
+                "get_pins: user requested pins from unknown node '%s'.",
+                node_name,
+            )
+            response = {
+                'code': 1,
+                'error_message': str(e),
+                'result': None,
+            }
+
         except Exception as e:
             logger.exception("get_pins failed")
             response = {
@@ -213,9 +224,31 @@ class LXAIOBusServer:
                     response['result'],
             )
 
+        except ValueError as e:
+            logger.warn(
+                "get_pin: user requested pin from unknown node '%s'.",
+                node_name,
+            )
+            response = {
+                'code': 1,
+                'error_message': str(e),
+                'result': None,
+            }
+
+        except KeyError as e:
+            logger.warn(
+                "get_pin: user requested unknown pin '%s' from node '%s'.",
+                pin_name,
+                node_name,
+            )
+            response = {
+                'code': 1,
+                'error_message': f"unknown pin '{pin_name}' for node '{node_name}'",
+                'result': None,
+            }
+
         except Exception as e:
             logger.exception("get_pin failed")
-
             response = {
                 'code': 1,
                 'error_message': str(e),
@@ -260,6 +293,16 @@ class LXAIOBusServer:
                     node_name,
             )
 
+        except ValueError as e:
+            logger.warn(
+                "get_pin_info: user requested pin info for unknown node '%s'.",
+                node_name,
+            )
+            response = {
+                'code': 1,
+                'error_message': str(e),
+                'result': None,
+            }
 
         except Exception as e:
             logger.exception("get_pin_info failed")
@@ -302,6 +345,29 @@ class LXAIOBusServer:
                     value,
             )
 
+        except ValueError as e:
+            logger.warn(
+                "set_pin: user wanted to set pin on unknown node '%s'.",
+                node_name,
+            )
+            response = {
+                'code': 1,
+                'error_message': str(e),
+                'result': None,
+            }
+
+        except KeyError as e:
+            logger.warn(
+                "set_pin: user wanted to set unknown pin '%s' on node '%s'.",
+                pin_name,
+                node_name,
+            )
+            response = {
+                'code': 1,
+                'error_message': f"unknown pin '{pin_name}' for node '{node_name}'",
+                'result': None,
+            }
+
         except Exception as e:
             logger.exception("set_pin failed")
             response = {
@@ -332,6 +398,17 @@ class LXAIOBusServer:
                     node_name,
                     new_state,
             )
+
+        except ValueError as e:
+            logger.warn(
+                "toggle_locator: user wanted to toggle the locator on unknown node '%s'.",
+                node_name,
+            )
+            response = {
+                'code': 1,
+                'error_message': str(e),
+                'result': None,
+            }
 
         except Exception as e:
             logger.exception('toggle locator failed')
