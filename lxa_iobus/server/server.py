@@ -184,6 +184,17 @@ class LXAIOBusServer:
             for name, pin in node.driver.pins.items():
                 response['result'].append(name)
 
+        except ValueError as e:
+            logger.warn(
+                "get_pins: user requested pins from unknown node '%s'.",
+                node_name,
+            )
+            response = {
+                'code': 1,
+                'error_message': str(e),
+                'result': None,
+            }
+
         except Exception as e:
             logger.exception("get_pins failed")
             response = {
@@ -207,10 +218,38 @@ class LXAIOBusServer:
             node = self.network.get_node_by_name(node_name)
 
             response['result'] = await node.driver.pins[pin_name].read()
+            logger.info(
+                    "get_pin: read pin %s on node %s: %s",
+                    pin_name,
+                    node_name,
+                    response['result'],
+            )
+
+        except ValueError as e:
+            logger.warn(
+                "get_pin: user requested pin from unknown node '%s'.",
+                node_name,
+            )
+            response = {
+                'code': 1,
+                'error_message': str(e),
+                'result': None,
+            }
+
+        except KeyError as e:
+            logger.warn(
+                "get_pin: user requested unknown pin '%s' from node '%s'.",
+                pin_name,
+                node_name,
+            )
+            response = {
+                'code': 1,
+                'error_message': f"unknown pin '{pin_name}' for node '{node_name}'",
+                'result': None,
+            }
 
         except Exception as e:
             logger.exception("get_pin failed")
-
             response = {
                 'code': 1,
                 'error_message': str(e),
@@ -251,7 +290,26 @@ class LXAIOBusServer:
 
             response['result'] = pin_info
 
+            # This view is polled by the web-interface.
+            # To keep the log nice and clean we will only log this to debug.
+            logger.debug(
+                    "get_pin_info: requested pin info for for node %s",
+                    node_name,
+            )
+
+        except ValueError as e:
+            logger.warn(
+                "get_pin_info: user requested pin info for unknown node '%s'.",
+                node_name,
+            )
+            response = {
+                'code': 1,
+                'error_message': str(e),
+                'result': None,
+            }
+
         except Exception as e:
+            logger.exception("get_pin_info failed")
             response = {
                 'code': 1,
                 'error_message': str(e),
@@ -284,6 +342,35 @@ class LXAIOBusServer:
                 value = int(value)
 
             response['result'] = await pin.write(value)
+            logger.info(
+                    "set_pin: set pin %s on node %s to %s",
+                    pin_name,
+                    node_name,
+                    value,
+            )
+
+        except ValueError as e:
+            logger.warn(
+                "set_pin: user wanted to set pin on unknown node '%s'.",
+                node_name,
+            )
+            response = {
+                'code': 1,
+                'error_message': str(e),
+                'result': None,
+            }
+
+        except KeyError as e:
+            logger.warn(
+                "set_pin: user wanted to set unknown pin '%s' on node '%s'.",
+                pin_name,
+                node_name,
+            )
+            response = {
+                'code': 1,
+                'error_message': f"unknown pin '{pin_name}' for node '{node_name}'",
+                'result': None,
+            }
 
         except Exception as e:
             logger.exception("set_pin failed")
@@ -310,6 +397,22 @@ class LXAIOBusServer:
             # The current state may thus be stale by up to a second or so.
             new_state = not node.locator_state
             await node.set_locator_state(new_state)
+            logger.info(
+                    "toggle_locator: set locator on node %s to %s",
+                    node_name,
+                    new_state,
+            )
+
+        except ValueError as e:
+            logger.warn(
+                "toggle_locator: user wanted to toggle the locator on unknown node '%s'.",
+                node_name,
+            )
+            response = {
+                'code': 1,
+                'error_message': str(e),
+                'result': None,
+            }
 
         except Exception as e:
             logger.exception('toggle locator failed')
