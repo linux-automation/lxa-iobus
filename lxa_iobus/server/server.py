@@ -21,11 +21,12 @@ logger = logging.getLogger('LXAIOBusServer')
 
 
 class LXAIOBusServer:
-    def __init__(self, app, loop, network, firmware_directory):
+    def __init__(self, app, loop, network, firmware_directory, allow_custom_firmware):  # noqa
         self.app = app
         self.loop = loop
         self.network = network
         self.firmware_directory = firmware_directory
+        self.allow_custom_firmware = allow_custom_firmware
 
         self.state = {
             'low_level_nodes': {},
@@ -329,15 +330,16 @@ class LXAIOBusServer:
         for driver, (version, path) in FIRMWARE_VERSIONS.items():
             upstream_files.append(os.path.basename(path))
 
-        for i in os.listdir(self.firmware_directory):
-            if i.startswith('.'):
-                continue
-
-            local_files.append(i)
+        if self.allow_custom_firmware:
+            for i in os.listdir(self.firmware_directory):
+                if i.startswith('.'):
+                    continue
+                local_files.append(i)
 
         response = {
             'upstream_files': upstream_files,
             'local_files': local_files,
+            'allow_custom_firmware': self.allow_custom_firmware,
         }
 
         return Response(text=json.dumps(response))
@@ -348,6 +350,15 @@ class LXAIOBusServer:
             'error_message': '',
             'result': None,
         }
+
+        if not self.allow_custom_firmware:
+            logger.exception('Firmware upload not possible if allow-custom-firmware is not set.')  # noqa
+            response = {
+                'code': 1,
+                'error_message': 'Firmware upload not possible if allow-custom-firmware is not set.',  # noqa
+                'result': None,
+            }
+            return Response(text=json.dumps(response))
 
         try:
             data = await request.post()
@@ -380,6 +391,15 @@ class LXAIOBusServer:
             'result': None,
         }
 
+        if not self.allow_custom_firmware:
+            logger.exception('Firmware delete not possible if allow-custom-firmware is not set.')  # noqa
+            response = {
+                'code': 1,
+                'error_message': 'Firmware delete not possible if allow-custom-firmware is not set.',  # noqa
+                'result': None,
+            }
+            return Response(text=json.dumps(response))
+
         try:
             filename = os.path.join(self.firmware_directory,
                                     request.match_info['file_name'])
@@ -404,6 +424,15 @@ class LXAIOBusServer:
             'result': None,
         }
 
+        if not self.allow_custom_firmware:
+            logger.exception('Custom firmware flashing not possible if allow-custom-firmware is not set.')  # noqa
+            response = {
+                'code': 1,
+                'error_message': 'Custom firmware flashing not possible if allow-custom-firmware is not set.',  # noqa
+                'result': None,
+            }
+            return Response(text=json.dumps(response))
+
         try:
             node_name = request.match_info['node']
             source = request.match_info['source']
@@ -426,7 +455,7 @@ class LXAIOBusServer:
             )
 
         except Exception as e:
-            logger.exception('firmware delete failed')
+            logger.exception('Firmware flashing failed')
 
             response = {
                 'code': 1,
@@ -454,7 +483,7 @@ class LXAIOBusServer:
             )
 
         except Exception as e:
-            logger.exception('firmware delete failed')
+            logger.exception('Firmware update failed')
 
             response = {
                 'code': 1,
