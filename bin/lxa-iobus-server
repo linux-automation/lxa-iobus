@@ -156,7 +156,7 @@ print('starting server on http://{}:{}/'.format(args.host, args.port))
 
 try:
     kwargs = {}
-    if args.log_level not in ["DEBUG"]:
+    if args.log_level != "DEBUG":
         kwargs["access_log"] = None
     run_app(app=app, host=args.host, port=args.port,
             handle_signals=False, print=lambda *args, **kwargs: None,
