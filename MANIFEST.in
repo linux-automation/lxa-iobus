@@ -1,4 +1,5 @@
 recursive-include lxa_iobus/ *
+include LICENSE.txt
 
 global-exclude .*
 global-exclude *~
