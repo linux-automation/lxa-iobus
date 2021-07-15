@@ -10,6 +10,9 @@ Linux Automation GmbH lxa-iobus
 .. image:: https://img.shields.io/pypi/v/lxa-iobus.svg
     :alt: pypi.org
     :target: https://pypi.org/project/lxa-iobus
+.. image:: https://readthedocs.org/projects/lxa-iobus/badge/?version=latest
+    :alt: documentation status
+    :target: https://lxa-iobus.readthedocs.io/en/latest/?badge=latest
 
 
 lxa-iobus-server
@@ -107,9 +110,9 @@ Your lxa-iobus-server is now ready for use.
 Installation
 """"""""""""
 
-For more information on a permanent installation of the lxa-iobus-server
-take a look into our documentation.
-
+For a permanent installation of the LXA IOBus server take a look into the
+`Getting Started section <https://lxa-iobus.readthedocs.io/en/latest/getting_started.html>`__
+in our documentation.
 
 REST API
 """"""""
@@ -189,5 +192,5 @@ You may see the ``lxa-iobus-server`` fail with messages like:
 
 ``Server dies with can.CanError: Failed to transmit: [Errno 105] No buffer space available``
 
-Have a look at `TROUBLESHOOTING.rst <TROUBLESHOOTING.rst>`_ for solutions to common
-CAN related issues.
+Have a look at our `troubleshooting guide <https://lxa-iobus.readthedocs.io/en/latest/troubleshooting.html>`__
+for common solutions for CAN related issues.
