@@ -34,8 +34,9 @@ If you want to get in touch with us feel free to do so:
 * IRC channel ``#lxa`` on libera.chat
   (bridged to the Matrix channel
   `#lxa:matrix.org <https://app.element.io/#/room/#lxa:matrix.org>`__)
-* If our :ref:`Troubleshooting` guide doesn't solve your problem or if you found
-  a bug feel free to open an
+* If our 
+  `troubleshooting guide <https://lxa-iobus.readthedocs.io/en/latest/troubleshooting.html>`__
+  doesn't solve your problem or if you found a bug feel free to open an
   `issue on github <https://github.com/linux-automation/lxa-iobus/issues>`__.
 * You can send us an email to info@linux-automation.com.
 
