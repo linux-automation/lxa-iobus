@@ -15,6 +15,7 @@ env: $(PYTHON_VENV)/.created
 
 clean:
 	rm -rf $(PYTHON_VENV)
+	rm -rf $(PYTHON_PACKAGING_VENV)
 
 server: env
 	. $(PYTHON_VENV)/bin/activate && \
