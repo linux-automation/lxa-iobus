@@ -185,7 +185,7 @@ class LXAIOBusServer:
                 response['result'].append(name)
 
         except ValueError as e:
-            logger.warn(
+            logger.info(
                 "get_pins: user requested pins from unknown node '%s'.",
                 node_name,
             )
@@ -226,7 +226,7 @@ class LXAIOBusServer:
             )
 
         except ValueError as e:
-            logger.warn(
+            logger.info(
                 "get_pin: user requested pin from unknown node '%s'.",
                 node_name,
             )
@@ -237,7 +237,7 @@ class LXAIOBusServer:
             }
 
         except KeyError as e:
-            logger.warn(
+            logger.info(
                 "get_pin: user requested unknown pin '%s' from node '%s'.",
                 pin_name,
                 node_name,
@@ -298,7 +298,7 @@ class LXAIOBusServer:
             )
 
         except ValueError as e:
-            logger.warn(
+            logger.info(
                 "get_pin_info: user requested pin info for unknown node '%s'.",
                 node_name,
             )
@@ -350,7 +350,7 @@ class LXAIOBusServer:
             )
 
         except ValueError as e:
-            logger.warn(
+            logger.info(
                 "set_pin: user wanted to set pin on unknown node '%s'.",
                 node_name,
             )
@@ -361,7 +361,7 @@ class LXAIOBusServer:
             }
 
         except KeyError as e:
-            logger.warn(
+            logger.info(
                 "set_pin: user wanted to set unknown pin '%s' on node '%s'.",
                 pin_name,
                 node_name,
@@ -404,7 +404,7 @@ class LXAIOBusServer:
             )
 
         except ValueError as e:
-            logger.warn(
+            logger.info(
                 "toggle_locator: user wanted to toggle the locator on unknown node '%s'.",
                 node_name,
             )
