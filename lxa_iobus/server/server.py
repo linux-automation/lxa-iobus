@@ -1,12 +1,13 @@
 from concurrent.futures import CancelledError
 from functools import partial
+from datetime import datetime
 from pprint import pformat
 import asyncio
 import logging
 import json
 import os
 
-from aiohttp.web import FileResponse, Response, HTTPFound
+from aiohttp.web import FileResponse, Response, HTTPFound, json_response
 from aiohttp_json_rpc import JsonRpc
 
 from lxa_iobus.lpc11xxcanisp.can_isp import CanIsp
@@ -34,6 +35,8 @@ class LXAIOBusServer:
             'nodes': {}
         }
 
+        self.started = datetime.now()
+
         # setup aiohttp
         self.rpc = JsonRpc(loop=self.loop, max_workers=6)
         self.worker_pool = self.rpc.worker_pool
@@ -52,6 +55,7 @@ class LXAIOBusServer:
         self.app.router.add_route('*', '/rpc/', self.rpc)
 
         # rest api
+        app.router.add_route('GET', '/server-info/', self.get_server_info)
         app.router.add_route('GET', '/nodes/{node}/pins/{pin}/', self.get_pin)
         app.router.add_route('POST', '/nodes/{node}/pins/{pin}/', self.set_pin)
         app.router.add_route('GET', '/nodes/{node}/pins/', self.get_pins)
@@ -139,6 +143,14 @@ class LXAIOBusServer:
                 logger.exception('flashing failed')
 
     # views ###################################################################
+    async def get_server_info(self, request):
+        return json_response({
+            'hostname': os.uname()[1],
+            'started': str(self.started),
+            'can_interface': self.network.interface,
+            'can_interface_is_up': self.network.interface_is_up(),
+        })
+
     async def index(self, request):
         return FileResponse(os.path.join(STATIC_ROOT, 'index.html'))
 

@@ -18,6 +18,13 @@
     <script id="main" type="text/html">
       <h1>LXA IOBus Server</h1>
 
+      <div id="server-info">
+        <div><strong>Hostname:</strong> <span id="server-info-hostname"></span></div>
+        <div><strong>Server Started:</strong> <span id="server-info-server-started"></span></div>
+        <div><strong>Can Interface:</strong> <span id="server-info-can-interface"></span></div>
+        <div><strong>Can Interface State:</strong> <span id="server-info-can-interface-state"></span></div>
+      </div>
+
       {{#if connected}}
         <div class="pure-menu pure-menu-horizontal">
           <ul class="pure-menu-list">

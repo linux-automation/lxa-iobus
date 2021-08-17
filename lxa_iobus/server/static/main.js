@@ -35,6 +35,18 @@ function delete_firmware(filename) {
     });
 };
 
+// server info ----------------------------------------------------------------
+function update_info() {
+    $.getJSON('/server-info/').done(function(data) {
+        document.querySelector('#server-info-hostname').innerHTML = data['hostname'];
+        document.querySelector('#server-info-server-started').innerHTML = data['started'];
+        document.querySelector('#server-info-can-interface').innerHTML = data['can_interface'];
+        document.querySelector('#server-info-can-interface-state').innerHTML = data['can_interface_is_up'] ? 'UP' : 'DOWN';
+    });
+};
+
+setInterval(update_info, 1000);
+
 // Ractive --------------------------------------------------------------------
 Ractive.DEBUG = false;
 
