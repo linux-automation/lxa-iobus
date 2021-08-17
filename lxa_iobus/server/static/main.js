@@ -87,6 +87,8 @@ if(window.location.protocol == 'https:') {
 var rpc = new RPC(rpc_protocol + window.location.host + '/rpc/');
 rpc.DEBUG = false;
 
+var first_connect = true;
+
 rpc.on('close', function(rpc) {
     ractive.set('connected', false);
 
@@ -105,6 +107,12 @@ rpc.on('close', function(rpc) {
 });
 
 rpc.on('open', function(rpc) {
+    if(first_connect) {
+        first_connect = false;
+    } else {
+        window.location.reload();
+    };
+
     ractive.set({
         connected: true,
         state: '',
