@@ -124,6 +124,13 @@ class LXAIOBusServer:
                 if shutdown:
                     return
 
+                self.can_isp.console_log(
+                    'Flashing {} ({})'.format(
+                        node.name,
+                        node.address,
+                    )
+                )
+
                 self.can_isp.console_log('Invoking isp')
                 await node.invoke_isp()
 
