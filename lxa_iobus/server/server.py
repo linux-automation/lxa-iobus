@@ -309,14 +309,24 @@ class LXAIOBusServer:
                     node_name,
             )
 
-        except ValueError as e:
-            logger.info(
-                "get_pin_info: user requested pin info for unknown node '%s'.",
-                node_name,
-            )
+        except TimeoutError:
             response = {
                 'code': 1,
-                'error_message': str(e),
+                'error_message': 'timeout',
+                'result': None,
+            }
+
+        except ValueError:
+            response = {
+                'code': 1,
+                'error_message': 'unknown node',
+                'result': None,
+            }
+
+        except IndexError:
+            response = {
+                'code': 1,
+                'error_message': 'unknown pin',
                 'result': None,
             }
 
