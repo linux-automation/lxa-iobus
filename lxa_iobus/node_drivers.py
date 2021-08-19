@@ -84,7 +84,6 @@ class Iobus4Do3Di3AiDriver(NodeDriver):
             'OUT1': Pin(self.node, 'output', 0, 1),
             'OUT2': Pin(self.node, 'output', 0, 2),
             'OUT3': Pin(self.node, 'output', 0, 3),
-            'LED': Pin(self.node, 'output', 0, 4),
             'IN0': Pin(self.node, 'input', 0, 0),
             'IN1': Pin(self.node, 'input', 0, 1),
             'IN2': Pin(self.node, 'input', 0, 2),
