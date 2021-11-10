@@ -5,9 +5,12 @@ import logging
 import time
 import json
 import os
+import errno
+import signal
+import sys
 
 from janus import Queue, SyncQueueEmpty
-from can import Bus
+from can import Bus, CanError
 
 from lxa_iobus.canopen import (
     gen_lss_switch_mode_global_message,
@@ -152,6 +155,7 @@ class LxaNetwork:
 
     # CAN send and receive threads ############################################
     def send(self):
+        tx_error = False
         while True:
             try:
                 message = self._outgoing_queue.sync_q.get(timeout=0.2)
@@ -160,16 +164,45 @@ class LxaNetwork:
 
                 self.bus.send(message)
 
+                if tx_error:
+                    tx_error = False
+                    logger.warn('tx: TX-buffer recovered.')
+
             except SyncQueueEmpty:
                 if not self._running or not self._interface_state:
+                    return
+
+            except CanError as e:
+                # FIXME: python-can does currently (in 3.3.4) not set e.errno
+                # so we have to fall back to __context__.
+                # A fix has already been placed in the development-branch:
+                # https://github.com/hardbyte/python-can/commit/0e0c64fd7104774dbcfe3641bd9a362ff54b2641
+                # But the latest 4.0-dev2 release does not contain this fix
+                # yet.
+                if e.__context__.errno == errno.ENOBUFS:
+                    # Send buffer is full. This can happen if there is no other
+                    # device on the bus.
+                    # Thus this is something normal to happen.
+                    # We will just wait for the bus to recover.
+                    if not tx_error:
+                        logger.warn('tx: TX-buffer full. '
+                                    'Maybe there is a problem with the bus?')
+                        tx_error = True
+                    else:
+                        logger.debug('tx: TX-buffer full. '
+                                     'Maybe there is a problem with the bus?')
+                else:
+                    logger.error('tx: Unhandled CAN error: %s', e)
                     break
 
             except Exception as e:
-                logger.debug('tx: crashed {}'.format(repr(e)))
-
+                logger.error('tx: Unhandled CAN error: %s', e)
                 break
 
-        logger.debug('tx: shutdown')
+        logger.error('tx: shutdown! Stopping application.')
+        # ask async to stop our application
+        os.kill(os.getpid(), signal.SIGTERM)
+
 
     def recv(self):
         while True:
@@ -210,9 +243,10 @@ class LxaNetwork:
                         pass
 
             except Exception as e:
-                logger.exception('rx: crashed')
-
-        logger.debug('rx: shutdown')
+                logger.exception('rx: crashed with unhandled error %s', e)
+                logger.error('rx: shutdown! Stopping application.')
+                # ask async to stop our application
+                os.kill(os.getpid(), signal.SIGTERM)
 
     # Canopen LSS #############################################################
     def _lss_set_response(self, response):
