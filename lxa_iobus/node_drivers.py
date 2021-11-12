@@ -142,7 +142,7 @@ class EthernetMuxDriver(NodeDriver):
     LSS_VENDOR = 0x507
     LSS_PRODUCT = 1
     LSS_REVISON = 4
-    NAME_PREFIX = 'Ethernet-Mux-00003.'
+    NAME_PREFIX = 'Ethernet-Mux-00012.'
 
     def _get_pins(self):
         return {
