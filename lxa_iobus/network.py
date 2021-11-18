@@ -284,7 +284,7 @@ class LxaNetwork:
         # TODO: check if we got the correct response
 
         # FIXME: sleep wird gebraucht weil RX nicht clean ist.
-        # wir krigen packete vom der letzten anfrage
+        # wir krigen Pakete vom der letzten anfrage
 
         response = await self.lss_request(
             gen_lss_fast_scan_message(lss_id, bit_checked, lss_sub, lss_next),
@@ -441,7 +441,7 @@ class LxaNetwork:
             )
 
             if not response:
-                logger.debug("fast_scan: Setting not ID not working")
+                logger.debug("fast_scan: No response to invalidate_node_IDs")
 
             response = await self.lss_request(
                 gen_lss_switch_mode_global_message(LSS_MODE.OPERATION),
@@ -485,7 +485,7 @@ class LxaNetwork:
                 )
 
                 if not response:
-                    logger.debug("fast_scan: Setting not ID not working")
+                    logger.debug("fast_scan: Setting node ID not working")
 
                 self.nodes[node_id] = LxaNode(
                     lxa_network=self,
@@ -503,7 +503,7 @@ class LxaNetwork:
                 )
 
                 if not response:
-                    logger.debug("fast_scan: Setting not ID not working")
+                    logger.debug("fast_scan: Setting node ID not working")
 
         except LxaShutdown:
             logger.debug('fast_scan: shutdown')
