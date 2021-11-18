@@ -160,7 +160,7 @@ try:
         kwargs["access_log"] = None
     run_app(app=app, host=args.host, port=args.port,
             handle_signals=False, print=lambda *args, **kwargs: None,
-            **kwargs)
+            loop=loop, **kwargs)
 
 except KeyboardInterrupt:
     server.shutdown()
