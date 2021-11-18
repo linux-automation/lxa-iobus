@@ -42,6 +42,8 @@ function update_info() {
         document.querySelector('#server-info-server-started').innerHTML = data['started'];
         document.querySelector('#server-info-can-interface').innerHTML = data['can_interface'];
         document.querySelector('#server-info-can-interface-state').innerHTML = data['can_interface_is_up'] ? 'UP' : 'DOWN';
+        document.querySelector('#server-info-can-tx-error').innerHTML = data['can_tx_error'] ? 'TX_ERROR!' : '';
+        document.querySelector('#server-info-lss-state').innerHTML = data['lss_state'];
     });
 };
 

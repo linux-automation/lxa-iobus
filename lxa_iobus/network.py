@@ -6,6 +6,7 @@ import time
 import json
 import os
 import errno
+import enum
 import signal
 import sys
 
@@ -35,6 +36,11 @@ class LxaShutdown(Exception):
 class LxaNetwork:
     node_drivers = []
 
+    class LssStates(enum.Enum):
+        """States of the LSS subsystem"""
+        IDLE = "Idle"
+        SCANNING = "Scanning"
+
     def __init__(self, loop, interface, bustype='socketcan', bitrate=100000,
                  lss_address_cache_file=None):
 
@@ -45,6 +51,9 @@ class LxaNetwork:
 
         self.lss_address_cache_file = lss_address_cache_file
         self.lss_address_cache = []
+        self.lss_state = LxaNetwork.LssStates.SCANNING
+
+        self.tx_error = False
 
         self._running = False
 
@@ -155,7 +164,6 @@ class LxaNetwork:
 
     # CAN send and receive threads ############################################
     def send(self):
-        tx_error = False
         while True:
             try:
                 message = self._outgoing_queue.sync_q.get(timeout=0.2)
@@ -164,8 +172,8 @@ class LxaNetwork:
 
                 self.bus.send(message)
 
-                if tx_error:
-                    tx_error = False
+                if self.tx_error:
+                    self.tx_error = False
                     logger.warn('tx: TX-buffer recovered.')
 
             except SyncQueueEmpty:
@@ -184,10 +192,10 @@ class LxaNetwork:
                     # device on the bus.
                     # Thus this is something normal to happen.
                     # We will just wait for the bus to recover.
-                    if not tx_error:
+                    if not self.tx_error:
                         logger.warn('tx: TX-buffer full. '
                                     'Maybe there is a problem with the bus?')
-                        tx_error = True
+                        self.tx_error = True
                     else:
                         logger.debug('tx: TX-buffer full. '
                                      'Maybe there is a problem with the bus?')
@@ -395,8 +403,11 @@ class LxaNetwork:
         # Check if node on Bus
         if not await self.fast_scan_request(0, 0x80, 0, 0):
             logger.debug("fast_scan: no unconfigured node")
+            self.lss_state = LxaNetwork.LssStates.IDLE
 
             return None
+
+        self.lss_state = LxaNetwork.LssStates.SCANNING
 
         # Try to find a node from the known node list
         if known_nodes is not None and len(known_nodes) > 0:

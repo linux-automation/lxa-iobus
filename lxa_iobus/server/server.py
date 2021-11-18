@@ -156,6 +156,8 @@ class LXAIOBusServer:
             'started': str(self.started),
             'can_interface': self.network.interface,
             'can_interface_is_up': self.network.interface_is_up(),
+            'lss_state': self.network.lss_state.value,
+            'can_tx_error': self.network.tx_error,
         })
 
     async def index(self, request):
