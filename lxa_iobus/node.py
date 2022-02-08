@@ -82,7 +82,6 @@ class LxaNode:
             await asyncio.wait_for(
                 async_fut,
                 timeout=timeout,
-                loop=self.lxa_network.loop,
             )
 
             return async_fut.result()
