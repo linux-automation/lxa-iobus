@@ -113,7 +113,7 @@ def gen_lss_switch_mode_global_message(lss_mode):
             LSS_COMMAND_SPECIFIER_SWITCH_MODE_GLOBAL,
             lss_mode,
         ),
-        extended_id=False
+        is_extended_id=False
     )
 
 
@@ -132,7 +132,7 @@ def gen_lss_configure_node_id_message(node_id):
             LSS_COMMAND_SPECIFIER_CONFIGURE_NODE_ID,
             node_id,
         ),
-        extended_id=False
+        is_extended_id=False
     )
 
 
@@ -145,7 +145,7 @@ def gen_invalidate_node_ids_message():
             LSS_COMMAND_SPECIFIER_CONFIGURE_NODE_ID,
             255,
         ),
-        extended_id=False
+        is_extended_id=False
     )
 
 
@@ -181,7 +181,7 @@ def gen_lss_fast_scan_message(id_number, bit_checked, lss_sub, lss_next):
             lss_sub,
             lss_next,
         ),
-        extended_id=False
+        is_extended_id=False
     )
 
 
@@ -238,7 +238,7 @@ def gen_sdo_initiate_download(node_id, type, index, sub_index, data):
             sub_index,
             data,
         ),
-        extended_id=False
+        is_extended_id=False
     )
 
 
@@ -280,7 +280,7 @@ def gen_sdo_segment_download(node_id, toggle, complete, seg_data):
             (command_specifier << 5) | (toggle << 4) | (n << 1) | complete,
             seg_data,
         ),
-        extended_id=False,
+        is_extended_id=False,
     )
 
 
@@ -305,7 +305,7 @@ def gen_sdo_initiate_upload(node_id, index, sub_index):
             sub_index,
             b'',
         ),
-        extended_id=False,
+        is_extended_id=False,
     )
 
 
@@ -334,7 +334,7 @@ def gen_sdo_segment_upload(node_id, toggle):
             (command_specifier << 5) | (toggle << 4),
             b'',
         ),
-        extended_id=False,
+        is_extended_id=False,
     )
 
 
