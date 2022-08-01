@@ -67,6 +67,7 @@ class LXAIOBusServer:
                              self.get_pin_info)
 
         app.router.add_route('GET', '/nodes/', self.get_nodes)
+        app.router.add_route('GET', '/nodes/{node}/', self.get_node)
 
         # firmware urls
         app.router.add_route(
@@ -151,14 +152,19 @@ class LXAIOBusServer:
 
     # views ###################################################################
     async def get_server_info(self, request):
-        return json_response({
+        response = {
             'hostname': os.uname()[1],
             'started': str(self.started),
             'can_interface': self.network.interface,
             'can_interface_is_up': self.network.interface_is_up(),
             'lss_state': self.network.lss_state.value,
             'can_tx_error': self.network.tx_error,
-        })
+        }
+        headers = {
+            'Access-Control-Allow-Origin': '*'
+        }
+
+        return json_response(response, headers=headers)
 
     async def index(self, request):
         return FileResponse(os.path.join(STATIC_ROOT, 'index.html'))
@@ -188,8 +194,52 @@ class LXAIOBusServer:
             'error_message': '',
             'result': nodes,
         }
+        headers = {
+            'Access-Control-Allow-Origin': '*'
+        }
 
-        return Response(text=json.dumps(response))
+        return json_response(response, headers=headers)
+
+    async def get_node(self, request):
+        response = {
+            'code': 0,
+            'error_message': '',
+            'result': {},
+        }
+
+        try:
+            node_name = request.match_info['node']
+            node = self.network.get_node_by_name(node_name)
+            response['result'] = {
+                'locator': node.locator_state,
+                'driver': node.driver.__class__.__name__,
+                'info': await node.get_info(),
+            }
+
+        except ValueError as e:
+            logger.info(
+                "get_node: user requested unknown node '%s'.",
+                node_name,
+            )
+            response = {
+                'code': 1,
+                'error_message': str(e),
+                'result': None,
+            }
+
+        except Exception as e:
+            logger.exception("get_node failed")
+            response = {
+                'code': 1,
+                'error_message': str(e),
+                'result': [],
+            }
+
+        headers = {
+            'Access-Control-Allow-Origin': '*'
+        }
+
+        return json_response(response, headers=headers)
 
     async def get_pins(self, request):
         response = {
