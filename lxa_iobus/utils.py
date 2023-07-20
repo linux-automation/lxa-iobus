@@ -3,4 +3,4 @@ def array2int(a):
 
 
 def int2array(c, octets=4):
-    return list(((c >> (i * 8)) & 0xff) for i in range(octets))
+    return list(((c >> (i * 8)) & 0xFF) for i in range(octets))
