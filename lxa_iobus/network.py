@@ -18,10 +18,10 @@ from lxa_iobus.canopen import (
     gen_invalidate_node_ids_message,
     gen_lss_fast_scan_message,
     gen_lss_configure_node_id_message,
-    LSS_PROTCOL_IDENTIFIER_SLAVE_TO_MASTER,
-    SDO_PROTCOL_IDENTIFIER_SLAVE_TO_MASTER,
+    LSS_PROTOCOL_IDENTIFIER_SLAVE_TO_MASTER,
+    SDO_PROTOCOL_IDENTIFIER_SLAVE_TO_MASTER,
     parse_sdo_message,
-    LSS_MODE,
+    LssMode,
 )
 
 from lxa_iobus.node import LxaNode
@@ -218,11 +218,11 @@ class LxaNetwork:
                 logger.debug("rx: %s", str(message))
 
                 # lss messages
-                if message.arbitration_id == LSS_PROTCOL_IDENTIFIER_SLAVE_TO_MASTER:
+                if message.arbitration_id == LSS_PROTOCOL_IDENTIFIER_SLAVE_TO_MASTER:
                     self._lss_set_response(message)
 
                 # sdo message
-                elif message.arbitration_id in SDO_PROTCOL_IDENTIFIER_SLAVE_TO_MASTER:
+                elif message.arbitration_id in SDO_PROTOCOL_IDENTIFIER_SLAVE_TO_MASTER:
                     sdo_message = parse_sdo_message(message)
                     node_id = sdo_message.node_id
 
@@ -417,7 +417,7 @@ class LxaNetwork:
     async def lss_fast_scan(self):
         try:
             response = await self.lss_request(
-                gen_lss_switch_mode_global_message(LSS_MODE.CONFIGURATION),
+                gen_lss_switch_mode_global_message(LssMode.CONFIGURATION),
             )
 
             if not response:
@@ -431,7 +431,7 @@ class LxaNetwork:
                 logger.debug("fast_scan: No response to invalidate_node_IDs")
 
             response = await self.lss_request(
-                gen_lss_switch_mode_global_message(LSS_MODE.OPERATION),
+                gen_lss_switch_mode_global_message(LssMode.OPERATION),
             )
 
             if not response:
@@ -484,7 +484,7 @@ class LxaNetwork:
 
                 self._sdo_queues[node_id] = Queue()
 
-                response = await self.lss_request(gen_lss_switch_mode_global_message(LSS_MODE.OPERATION))
+                response = await self.lss_request(gen_lss_switch_mode_global_message(LssMode.OPERATION))
 
                 if not response:
                     logger.debug("fast_scan: Setting node ID not working")

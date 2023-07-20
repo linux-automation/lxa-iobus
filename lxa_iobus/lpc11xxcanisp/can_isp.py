@@ -282,7 +282,7 @@ class CanIsp:
 
         return self.get("Program Area")
 
-    def read_partID(self) -> int:
+    def read_part_id(self) -> int:
         """
         Returns a tuple with the part id and the part name if known
         otherwise None
@@ -410,7 +410,7 @@ class CanIsp:
         For more info see: UM10398 26.3.3 Criterion for Valid User Code.
         """
 
-        vector_table = data[0 : 4 * 7]  # First 7 entrys
+        vector_table = data[0 : 4 * 7]  # First 7 entries
         vector_table = struct.unpack("iiiiiii", vector_table)
 
         checksum = 0 - (sum(vector_table))

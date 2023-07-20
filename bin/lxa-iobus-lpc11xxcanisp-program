@@ -252,7 +252,7 @@ class CanIsp:
         self.send("Memory Read Length", length)
         return self.get("Program Area")
 
-    def read_partID(self) -> int:
+    def read_part_id(self) -> int:
         """Returns a tuple with the part id and the part name if known otherwise None"""
         part_id = self.get("Part Identification Number")
         part_name = self.part_ids.get(part_id, None)
@@ -363,7 +363,7 @@ def fix_checksum(data):
 
 def _isp_info(isp):
     print("device_type:", isp.read_device_type())
-    print("partID: 0x{:08X} {}".format(*isp.read_partID()))
+    print("partID: 0x{:08X} {}".format(*isp.read_part_id()))
     print("serial_number: {:08X} {:08X} {:08X} {:08X}".format(*isp.read_serial_number()))
     print("bootloader_version: {:08X}".format(isp.read_bootloader_version()))
 

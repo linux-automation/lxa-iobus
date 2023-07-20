@@ -39,7 +39,7 @@ class NodeDriver:
     # public api ##############################################################
     @classmethod
     def match(cls, node):
-        driver_addr = [cls.LSS_VENDOR, cls.LSS_PRODUCT, cls.LSS_REVISON]
+        driver_addr = [cls.LSS_VENDOR, cls.LSS_PRODUCT, cls.LSS_REVISION]
 
         # Construct a human-readable device name from a driver
         # specific prefix and the zero-padded decimal serial number
@@ -73,7 +73,7 @@ class Iobus4Do3Di3AiDriver(NodeDriver):
 
     LSS_VENDOR = 0x507
     LSS_PRODUCT = 2
-    LSS_REVISON = 3
+    LSS_REVISION = 3
     NAME_PREFIX = "4DO-3DI-3AI-00005."
 
     def _get_pins(self):
@@ -108,7 +108,7 @@ class PTXIOMuxDriver(NodeDriver):
 
     LSS_VENDOR = 0
     LSS_PRODUCT = 4
-    LSS_REVISON = 1
+    LSS_REVISION = 1
     NAME_PREFIX = "PTXIOMux-00004."
 
     def _get_pins(self):
@@ -139,7 +139,7 @@ class EthernetMuxDriver(NodeDriver):
 
     LSS_VENDOR = 0x507
     LSS_PRODUCT = 1
-    LSS_REVISON = 4
+    LSS_REVISION = 4
     NAME_PREFIX = "Ethernet-Mux-00012."
 
     def _get_pins(self):
