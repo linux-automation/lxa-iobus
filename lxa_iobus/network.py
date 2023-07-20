@@ -8,7 +8,6 @@ import os
 import errno
 import enum
 import signal
-import sys
 
 from janus import Queue, SyncQueueEmpty
 from can import Bus, CanError
@@ -558,7 +557,7 @@ class LxaNetwork:
         return self.nodes[125]
 
     def get_node_by_name(self, name):
-        for node_id, node in self.nodes.copy().items():
+        for _, node in self.nodes.copy().items():
             if node.name == name:
                 return node
 

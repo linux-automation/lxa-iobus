@@ -145,7 +145,7 @@ class CanIsp:
         self._console.append(message)
 
         if len(self._console) > console_max_len:
-            self._console = self._console[len(self._console) - console_max_len :]
+            self._console = self._console[len(self._console) - console_max_len :]  # noqa
 
         self.server.rpc.worker_pool.run_sync(
             partial(self.server.rpc.notify, "isp_console", self._console),
@@ -385,7 +385,7 @@ class CanIsp:
 
             start_offset = block_size * (block_num - start_sector)
 
-            block = data[start_offset : start_offset + block_size]
+            block = data[start_offset : start_offset + block_size]  # noqa
             logging.info("Block length %d", len(block))
 
             # Transfer data block to the RAM of the MCU
@@ -409,14 +409,15 @@ class CanIsp:
         and is normaly done somewhere in the swd programming chain.
         For more info see: UM10398 26.3.3 Criterion for Valid User Code.
         """
+        # First 7 entries:
+        vector_table = data[0 : 4 * 7]  # noqa
 
-        vector_table = data[0 : 4 * 7]  # First 7 entries
         vector_table = struct.unpack("iiiiiii", vector_table)
 
         checksum = 0 - (sum(vector_table))
         checksum = struct.pack("i", checksum)
 
-        data = data[0 : 4 * 7] + checksum + data[4 * 8 :]
+        data = data[0 : 4 * 7] + checksum + data[4 * 8 :]  # noqa
 
         return data
 
@@ -438,9 +439,7 @@ class CanIsp:
 
         if len(data) > length:
             self.console_log(
-                "Supplied Image is too long for section. Allowed {} bytes, is {} bytes".format(  # NOQA
-                    length, len(data)
-                )
+                "Supplied Image is too long for section. Allowed {} bytes, is {} bytes".format(length, len(data))
             )
 
             exit(1)
