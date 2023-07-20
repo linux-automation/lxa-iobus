@@ -1,6 +1,7 @@
 PYTHON=python3
 PYTHON_VENV=env
 PYTHON_PACKAGING_VENV=$(PYTHON_VENV)-packaging
+PYTHON_TESTING_ENV=$(PYTHON_VENV)-qa
 INTERFACE=can0
 LSS_ADDRESS_CACHE_FILE=lss-address-cache.json
 
@@ -43,3 +44,17 @@ sdist: packaging-env
 _release: sdist
 	. $(PYTHON_PACKAGING_VENV)/bin/activate && \
 	twine upload dist/*
+
+# testing #####################################################################
+$(PYTHON_TESTING_ENV)/.created: REQUIREMENTS.qa.txt
+	rm -rf $(PYTHON_TESTING_ENV) && \
+	$(PYTHON) -m venv $(PYTHON_TESTING_ENV) && \
+	. $(PYTHON_TESTING_ENV)/bin/activate && \
+	pip install pip --upgrade && \
+	pip install -r ./REQUIREMENTS.qa.txt && \
+	date > $(PYTHON_TESTING_ENV)/.created
+
+qa: $(PYTHON_TESTING_ENV)/.created
+	. $(PYTHON_TESTING_ENV)/bin/activate && \
+	black --check --diff . && \
+	flake8

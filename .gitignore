@@ -225,12 +225,14 @@ celerybeat.pid
 # Environments
 .env
 .venv
+.
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
 env-packaging/
+env-qa/
 
 # Spyder project settings
 .spyderproject
@@ -277,3 +279,5 @@ tags
 
 /firmware/
 lss-address-cache.json
+
+.idea
