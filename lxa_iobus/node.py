@@ -115,7 +115,7 @@ class LxaNode:
 
             if response.index != index or response.subindex != sub_index:
                 raise Exception(
-                    "Got answer to the wrong data object: Is: {}-{} , Should: {}-{}".format(  # NOQA
+                    "Got answer to the wrong data object: Is: {}-{} , Should: {}-{}".format(
                         response.index,
                         response.subindex,
                         index,

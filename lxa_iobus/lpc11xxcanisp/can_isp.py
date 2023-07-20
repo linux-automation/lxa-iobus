@@ -333,7 +333,7 @@ class CanIsp:
             if e.str() == "COMPARE_ERROR":
                 offset = self.get("Compare mismatch")
 
-                raise IspCompareError(offset)
+                raise IspCompareError(offset) from e
 
     def flash_image(self, start, data):
         logging.info("Data to be writen: %d Byte", len(data))
@@ -409,8 +409,9 @@ class CanIsp:
         and is normaly done somewhere in the swd programming chain.
         For more info see: UM10398 26.3.3 Criterion for Valid User Code.
         """
+        # First 7 entries:
+        vector_table = data[0 : 4 * 7]
 
-        vector_table = data[0 : 4 * 7]  # First 7 entries
         vector_table = struct.unpack("iiiiiii", vector_table)
 
         checksum = 0 - (sum(vector_table))
@@ -438,9 +439,7 @@ class CanIsp:
 
         if len(data) > length:
             self.console_log(
-                "Supplied Image is too long for section. Allowed {} bytes, is {} bytes".format(  # NOQA
-                    length, len(data)
-                )
+                "Supplied Image is too long for section. Allowed {} bytes, is {} bytes".format(length, len(data))
             )
 
             exit(1)
