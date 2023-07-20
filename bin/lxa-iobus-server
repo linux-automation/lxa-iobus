@@ -45,59 +45,58 @@ signal.signal(signal.SIGINT, exit_handler)
 # parse command line arguments
 parser = ArgumentParser()
 
-parser.add_argument('interface')
+parser.add_argument("interface")
 parser.add_argument(
-    '--port',
+    "--port",
     type=int,
     default=8080,
-    help='Port to serve on. Defaults to 8080',
+    help="Port to serve on. Defaults to 8080",
 )
 parser.add_argument(
-    '--host',
+    "--host",
     type=str,
-    default='localhost',
-    help='Host to bind to. Defaults to \'localhost\'',
+    default="localhost",
+    help="Host to bind to. Defaults to 'localhost'",
 )
 parser.add_argument(
-    '--shell',
-    action='store_true',
-    help='Embeds an ipython shell for easy debugging',
+    "--shell",
+    action="store_true",
+    help="Embeds an ipython shell for easy debugging",
 )
 parser.add_argument(
-    '--firmware-directory',
+    "--firmware-directory",
     type=str,
-    default='firmware',
-    help='Directory where uploaded firmware is stored. '
-    'Only used when --allow-custom-firmware is set.'
+    default="firmware",
+    help="Directory where uploaded firmware is stored. " "Only used when --allow-custom-firmware is set.",
 )
 parser.add_argument(
-    '--allow-custom-firmware',
-    action='store_true',
-    help='Allows to upload and flash own (arbitrary) firmware '
-    'into the program section of the nodes.'
+    "--allow-custom-firmware",
+    action="store_true",
+    help="Allows to upload and flash own (arbitrary) firmware " "into the program section of the nodes.",
 )
 parser.add_argument(
-    '--lss-address-cache-file',
+    "--lss-address-cache-file",
     type=str,
-    default='',
-    help='LSS addresses cache as json. Reduces startup time for known nodes.',
+    default="",
+    help="LSS addresses cache as json. Reduces startup time for known nodes.",
 )
 
 parser.add_argument(
-    '-l', '--log-level',
-    choices=['DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'],
-    default='WARN',
+    "-l",
+    "--log-level",
+    choices=["DEBUG", "INFO", "WARN", "ERROR", "FATAL"],
+    default="WARN",
 )
 
 args = parser.parse_args()
 
 # setup logging
 log_level = {
-    'DEBUG': logging.DEBUG,
-    'INFO': logging.INFO,
-    'WARN': logging.WARN,
-    'ERROR': logging.ERROR,
-    'FATAL': logging.FATAL,
+    "DEBUG": logging.DEBUG,
+    "INFO": logging.INFO,
+    "WARN": logging.WARN,
+    "ERROR": logging.ERROR,
+    "FATAL": logging.FATAL,
 }[args.log_level]
 
 logging.basicConfig(level=log_level)
@@ -114,11 +113,12 @@ network = LxaNetwork(
     lss_address_cache_file=args.lss_address_cache_file,
 )
 
-app['network'] = network
+app["network"] = network
 
 
 async def shutdown_network(app):
-    await app['network'].shutdown()
+    await app["network"].shutdown()
+
 
 app.on_shutdown.append(shutdown_network)
 loop.create_task(network.run())
@@ -135,11 +135,12 @@ try:
 
 except OSError as e:
     if e.errno == errno.ENODEV:  # can interface not available
-        exit('interface {} not available'.format(args.interface))
+        exit("interface {} not available".format(args.interface))
 
 loop.create_task(server.flush_state_periodicly())
 
 if args.shell:
+
     def _start_shell():
         from traitlets.config import Config
         import IPython
@@ -153,15 +154,21 @@ if args.shell:
 
     loop.create_task(server.rpc.worker_pool.run(_start_shell))
 
-print('starting server on http://{}:{}/'.format(args.host, args.port))
+print("starting server on http://{}:{}/".format(args.host, args.port))
 
 try:
     kwargs = {}
     if args.log_level != "DEBUG":
         kwargs["access_log"] = None
-    run_app(app=app, host=args.host, port=args.port,
-            handle_signals=False, print=lambda *args, **kwargs: None,
-            loop=loop, **kwargs)
+    run_app(
+        app=app,
+        host=args.host,
+        port=args.port,
+        handle_signals=False,
+        print=lambda *args, **kwargs: None,
+        loop=loop,
+        **kwargs,
+    )
 
 except KeyboardInterrupt:
     server.shutdown()
@@ -169,9 +176,9 @@ except KeyboardInterrupt:
 
 except OSError:
     server.shutdown()
-    exit('ERROR: can not bind to port {}'.format(args.port))
+    exit("ERROR: can not bind to port {}".format(args.port))
 
-print('\rshutting down server')
+print("\rshutting down server")
 
 server.shutdown()
 os.kill(os.getpid(), signal.SIGTERM)

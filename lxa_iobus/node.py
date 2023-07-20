@@ -21,15 +21,16 @@ from lxa_iobus.canopen import (
 
 DEFAULT_TIMEOUT = 1
 
-logger = logging.getLogger('lxa_iobus.node')
+logger = logging.getLogger("lxa_iobus.node")
 
 VENDOR_VERSION_FIELDS = (
-    (0x2001, 0, 'protocol_version', int),
-    (0x2001, 1, 'board_version', int),
-    (0x2001, 2, 'serial_string', str),
-    (0x2001, 3, 'vendor_name', str),
-    (0x2001, 5, 'notes', str),
+    (0x2001, 0, "protocol_version", int),
+    (0x2001, 1, "board_version", int),
+    (0x2001, 2, "serial_string", str),
+    (0x2001, 3, "vendor_name", str),
+    (0x2001, 5, "notes", str),
 )
+
 
 class LxaNode:
     def __init__(self, lxa_network, lss_address, node_id):
@@ -40,9 +41,7 @@ class LxaNode:
         self._pending_message = None
         self._lock = asyncio.Lock()
 
-        self.address = '.'.join(
-            ['{:08x}'.format(i) for i in self.lss_address]
-        )
+        self.address = ".".join(["{:08x}".format(i) for i in self.lss_address])
 
         self.inputs = []
         self.outputs = []
@@ -59,17 +58,14 @@ class LxaNode:
                 break
 
     def __repr__(self):
-        return '<LxaNode(address={}, node_id={}, driver={})>'.format(
+        return "<LxaNode(address={}, node_id={}, driver={})>".format(
             self.address,
             self.node_id,
             repr(self.driver),
         )
 
     def set_sdo_response(self, message):
-        if(self._pending_message and
-           not self._pending_message.done() and
-           not self._pending_message.cancelled()):
-
+        if self._pending_message and not self._pending_message.done() and not self._pending_message.cancelled():
             self._pending_message.set_result(message)
 
     async def _send_sdo_message(self, message, timeout=DEFAULT_TIMEOUT):
@@ -106,20 +102,20 @@ class LxaNode:
                 raise TimeoutError
 
             # Something went wrong on the node side
-            if response.type == 'abort':
+            if response.type == "abort":
                 raise SDO_Abort(
                     node_id=response.node_id,
                     index=response.index,
                     sub_index=response.subindex,
-                    error_code=response.error_code
+                    error_code=response.error_code,
                 )
             # Not the packet we were expecting
-            if not response.type == 'initiate_upload':
-                raise Exception('Got wrong answer: {}'.format(response.type))
+            if not response.type == "initiate_upload":
+                raise Exception("Got wrong answer: {}".format(response.type))
 
             if response.index != index or response.subindex != sub_index:
                 raise Exception(
-                    'Got answer to the wrong data object: Is: {}-{} , Should: {}-{}'.format(  # NOQA
+                    "Got answer to the wrong data object: Is: {}-{} , Should: {}-{}".format(  # NOQA
                         response.index,
                         response.subindex,
                         index,
@@ -128,25 +124,25 @@ class LxaNode:
                 )
 
             # We get a packet where the size field is used
-            if response.readable_transfer_type == 'DataWithSize':
-                return response.data[0:4-response.number_of_bytes_not_used]
+            if response.readable_transfer_type == "DataWithSize":
+                return response.data[0 : 4 - response.number_of_bytes_not_used]
 
             # We got a packet data uses the packet length as size
             # Is not used in the firmware
-            if response.readable_transfer_type == 'DataNoSize':
+            if response.readable_transfer_type == "DataNoSize":
                 return response.data
 
             # Segmented transfare
             # We get the size of data to come
-            if not response.readable_transfer_type == 'Size':
-                raise Exception('Unknown transfare type')
+            if not response.readable_transfer_type == "Size":
+                raise Exception("Unknown transfare type")
 
-            transfer_size = struct.unpack('<L', response.data)[0]
+            transfer_size = struct.unpack("<L", response.data)[0]
 
-            logger.debug('Long SDO read: size {}'.format(transfer_size))
+            logger.debug("Long SDO read: size {}".format(transfer_size))
 
             PACKET_SIZE = 7
-            collected_data = b''
+            collected_data = b""
             toggle = False
 
             while transfer_size > 0:
@@ -163,7 +159,7 @@ class LxaNode:
                 if response is None:
                     raise TimeoutError
 
-                if response.type == 'abort':
+                if response.type == "abort":
                     raise SDO_Abort(
                         node_id=response.node_id,
                         index=response.index,
@@ -171,13 +167,12 @@ class LxaNode:
                         error_code=response.error_code,
                     )
 
-                if not response.type == 'upload_segment':
-                    raise Exception(
-                        'Got wrong answer: {}'.format(response.type))
+                if not response.type == "upload_segment":
+                    raise Exception("Got wrong answer: {}".format(response.type))
 
                 if not toggle == response.toggle:
                     Exception(
-                        'Toggle bit does not match: is: {}, should: {}'.format(
+                        "Toggle bit does not match: is: {}, should: {}".format(
                             response.toggle,
                             toggle,
                         ),
@@ -186,7 +181,7 @@ class LxaNode:
                 # Flip toggle
                 toggle ^= True
 
-                seg_data_end = PACKET_SIZE-response.number_of_bytes_not_used
+                seg_data_end = PACKET_SIZE - response.number_of_bytes_not_used
                 seg_data = response.seg_data[0:seg_data_end]
                 collected_data += seg_data
                 transfer_size -= len(seg_data)
@@ -220,7 +215,7 @@ class LxaNode:
                 if response is None:
                     raise TimeoutError
 
-                if response.type == 'abort':
+                if response.type == "abort":
                     raise SDO_Abort(
                         node_id=response.node_id,
                         index=response.index,
@@ -228,9 +223,8 @@ class LxaNode:
                         error_code=response.error_code,
                     )
 
-                if not response.type == 'initiate_download':
-                    raise Exception(
-                        'Got wrong answer: {}'.format(response.type))
+                if not response.type == "initiate_download":
+                    raise Exception("Got wrong answer: {}".format(response.type))
 
                 return
 
@@ -243,7 +237,7 @@ class LxaNode:
                 node_id=self.node_id,
                 index=index,
                 sub_index=sub_index,
-                data=struct.pack('<L', transfer_size),
+                data=struct.pack("<L", transfer_size),
                 type=SDO_TRANSFER_TYPE_SIZE,
             )
 
@@ -255,7 +249,7 @@ class LxaNode:
             if response is None:
                 raise TimeoutError
 
-            if response.type == 'abort':
+            if response.type == "abort":
                 raise SDO_Abort(
                     node_id=response.node_id,
                     index=response.index,
@@ -263,15 +257,15 @@ class LxaNode:
                     error_code=response.error_code,
                 )
 
-            if not response.type == 'initiate_download':
-                raise Exception('Got wrong answer: {}'.format(response.type))
+            if not response.type == "initiate_download":
+                raise Exception("Got wrong answer: {}".format(response.type))
 
             PACKET_SIZE = 7
             segment = 0
             toggle = False
 
             while transfer_size > 0:
-                offset = segment*PACKET_SIZE
+                offset = segment * PACKET_SIZE
                 length = min(transfer_size, PACKET_SIZE)
 
                 # Is this last packet
@@ -280,14 +274,14 @@ class LxaNode:
                 if length < PACKET_SIZE:
                     complete = True
 
-                if len(data) == offset+length:
+                if len(data) == offset + length:
                     complete = True
 
                 message = gen_sdo_segment_download(
                     node_id=self.node_id,
                     toggle=toggle,
                     complete=complete,
-                    seg_data=data[offset:offset+length],
+                    seg_data=data[offset : offset + length],
                 )
 
                 response = await self._send_sdo_message(
@@ -298,7 +292,7 @@ class LxaNode:
                 if response is None:
                     raise TimeoutError
 
-                if response.type == 'abort':
+                if response.type == "abort":
                     raise SDO_Abort(
                         node_id=response.node_id,
                         index=response.index,
@@ -306,9 +300,8 @@ class LxaNode:
                         error_code=response.error_code,
                     )
 
-                if not response.type == 'download_segment':
-                    raise Exception(
-                        'Got wrong answer: {}'.format(response.type))
+                if not response.type == "download_segment":
+                    raise Exception("Got wrong answer: {}".format(response.type))
 
                 if complete:
                     return
@@ -318,18 +311,18 @@ class LxaNode:
                 transfer_size -= length
 
             # Maybe the complete flag is not corectly set
-            raise Exception('Something went wrong with segmented download')
+            raise Exception("Something went wrong with segmented download")
 
     # public API ##############################################################
     async def ping(self, timeout=DEFAULT_TIMEOUT):
         try:
             raw_state = await self.sdo_read(
-                index=0x210c,
+                index=0x210C,
                 sub_index=1,
                 timeout=timeout,
             )
 
-            self.locator_state = (array2int(raw_state) != 0)
+            self.locator_state = array2int(raw_state) != 0
 
             return True
 
@@ -337,33 +330,32 @@ class LxaNode:
             return False
 
     async def get_info(self):
-        if hasattr(self, '_info') and self._info is not None:
+        if hasattr(self, "_info") and self._info is not None:
             return self._info
 
         # node info ###########################################################
         device_name = await self.sdo_read(0x1008, 0)
         hardware_version = await self.sdo_read(0x1009, 0)
-        software_version = await self.sdo_read(0x100a, 0)
+        software_version = await self.sdo_read(0x100A, 0)
 
         # check for updates
-        update_name = ''
+        update_name = ""
 
         firmware = FIRMWARE_VERSIONS.get(self.driver.__class__)
         if firmware:
-            raw_version = software_version.decode().split(' ')[1]
-            version_tuple = tuple([int(i) for i in raw_version.split('.')])
+            raw_version = software_version.decode().split(" ")[1]
+            version_tuple = tuple([int(i) for i in raw_version.split(".")])
 
             if version_tuple < firmware[0]:
                 update_name = os.path.basename(firmware[1])
-                logger.info('Found firmware update for {} to {}'.format(
-                    self, '.'.join(str(x) for x in firmware[0])))
+                logger.info("Found firmware update for {} to {}".format(self, ".".join(str(x) for x in firmware[0])))
 
         self._info = {
-            'device_name': device_name.decode(),
-            'address': str(self.address),
-            'hardware_version': hardware_version.decode(),
-            'software_version': software_version.decode(),
-            'update_name': update_name,
+            "device_name": device_name.decode(),
+            "address": str(self.address),
+            "hardware_version": hardware_version.decode(),
+            "software_version": software_version.decode(),
+            "update_name": update_name,
         }
 
         # pin info ############################################################
@@ -372,13 +364,13 @@ class LxaNode:
         protocols = []
 
         for i in range(protocol_count):
-            tmp = await self.sdo_read(0x2000, i+1)
+            tmp = await self.sdo_read(0x2000, i + 1)
             tmp = array2int(tmp)
             protocols.append(tmp)
 
         # Vendor-Specific version information
         if 0x2001 in protocols:
-            for (sdo, sub_idx, field_name, field_type) in VENDOR_VERSION_FIELDS:
+            for sdo, sub_idx, field_name, field_type in VENDOR_VERSION_FIELDS:
                 # Do not fail when one of the reads to these
                 # vendor-specific fields fails.
                 try:
@@ -417,8 +409,8 @@ class LxaNode:
                 self.outputs.append(channel)
 
         # ADCs
-        if 0x2adc in protocols:
-            channel_count = await self.sdo_read(0x2adc, 0)
+        if 0x2ADC in protocols:
+            channel_count = await self.sdo_read(0x2ADC, 0)
             channel_count = array2int(channel_count)
 
             for i in range(channel_count):
@@ -429,14 +421,14 @@ class LxaNode:
         return self._info
 
     async def set_locator_state(self, state):
-        cmd = b'\x01\x00\x00\x00' if state else b'\x00\x00\x00\x00'
+        cmd = b"\x01\x00\x00\x00" if state else b"\x00\x00\x00\x00"
 
-        await self.sdo_write(0x210c, 1, cmd)
+        await self.sdo_write(0x210C, 1, cmd)
         self.locator_state = state
 
     async def invoke_isp(self):
         try:
-            await self.sdo_write(0x2b07, 0, struct.pack('I', 0x12345678))
+            await self.sdo_write(0x2B07, 0, struct.pack("I", 0x12345678))
 
         except TimeoutError:
             pass

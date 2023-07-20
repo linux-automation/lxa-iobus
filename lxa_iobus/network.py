@@ -26,7 +26,7 @@ from lxa_iobus.canopen import (
 
 from lxa_iobus.node import LxaNode
 
-logger = logging.getLogger('lx-iobus.network')
+logger = logging.getLogger("lx-iobus.network")
 
 
 class LxaShutdown(Exception):
@@ -38,12 +38,11 @@ class LxaNetwork:
 
     class LssStates(enum.Enum):
         """States of the LSS subsystem"""
+
         IDLE = "Idle"
         SCANNING = "Scanning"
 
-    def __init__(self, loop, interface, bustype='socketcan', bitrate=100000,
-                 lss_address_cache_file=None):
-
+    def __init__(self, loop, interface, bustype="socketcan", bitrate=100000, lss_address_cache_file=None):
         self.loop = loop
         self.interface = interface
         self.bustype = bustype
@@ -59,11 +58,9 @@ class LxaNetwork:
 
     # interface checker code ##################################################
     def interface_is_up(self):
-        path = os.path.join('/sys/class/net/', self.interface, 'operstate')
+        path = os.path.join("/sys/class/net/", self.interface, "operstate")
 
-        if(os.path.exists(path) and
-           open(path, 'r').read().strip() in ['up', 'unknown']):
-
+        if os.path.exists(path) and open(path, "r").read().strip() in ["up", "unknown"]:
             return True
 
         return False
@@ -74,11 +71,11 @@ class LxaNetwork:
                 if self.interface_is_up():
                     self._interface_state = True
 
-                    logger.debug('interface_is_up')
+                    logger.debug("interface_is_up")
 
                     return
 
-                logger.debug('interface is down')
+                logger.debug("interface is down")
 
                 time.sleep(1)
 
@@ -100,33 +97,33 @@ class LxaNetwork:
     async def load_lss_address_cache(self):
         def _load_lss_address_cache():
             if not self.lss_address_cache_file:
-                logger.info('no lss address cache file set. skip loading')
+                logger.info("no lss address cache file set. skip loading")
 
                 return
 
             # create file if not present
             if not os.path.exists(self.lss_address_cache_file):
                 try:
-                    with open(self.lss_address_cache_file, 'w+') as f:
-                        f.write('[]')
+                    with open(self.lss_address_cache_file, "w+") as f:
+                        f.write("[]")
 
                 except Exception:
                     logger.error(
-                        'exception raised while creating %s',
+                        "exception raised while creating %s",
                         self.lss_address_cache_file,
                         exc_info=True,
                     )
 
             # reading file
-            file_content = ''
+            file_content = ""
 
             try:
-                with open(self.lss_address_cache_file, 'r') as f:
+                with open(self.lss_address_cache_file, "r") as f:
                     file_content = f.read()
 
             except FileNotFoundError:
                 logger.error(
-                    'lss node cache file %s does not exist',
+                    "lss node cache file %s does not exist",
                     self.lss_address_cache_file,
                 )
 
@@ -134,28 +131,24 @@ class LxaNetwork:
                 self.lss_address_cache = json.loads(file_content)
 
             except Exception:
-                logger.error(
-                    'exception raised while reading %s',
-                    self.lss_address_cache_file,
-                    exc_info=True
-                )
+                logger.error("exception raised while reading %s", self.lss_address_cache_file, exc_info=True)
 
         self.loop.run_in_executor(None, _load_lss_address_cache)
 
     async def write_lss_address_cache(self):
         def _write_lss_address_cache():
             if not self.lss_address_cache_file:
-                logger.debug('no lss address cache file set. skip writing')
+                logger.debug("no lss address cache file set. skip writing")
 
                 return
 
             try:
-                with open(self.lss_address_cache_file, 'w') as f:
+                with open(self.lss_address_cache_file, "w") as f:
                     f.write(json.dumps(self.lss_address_cache))
 
             except Exception:
                 logger.error(
-                    'exception raised while writing %s',
+                    "exception raised while writing %s",
                     self.lss_address_cache_file,
                     exc_info=True,
                 )
@@ -168,13 +161,13 @@ class LxaNetwork:
             try:
                 message = self._outgoing_queue.sync_q.get(timeout=0.2)
 
-                logger.debug('tx: %s', str(message))
+                logger.debug("tx: %s", str(message))
 
                 self.bus.send(message)
 
                 if self.tx_error:
                     self.tx_error = False
-                    logger.warn('tx: TX-buffer recovered.')
+                    logger.warn("tx: TX-buffer recovered.")
 
             except SyncQueueEmpty:
                 if not self._running or not self._interface_state:
@@ -193,24 +186,21 @@ class LxaNetwork:
                     # Thus this is something normal to happen.
                     # We will just wait for the bus to recover.
                     if not self.tx_error:
-                        logger.warn('tx: TX-buffer full. '
-                                    'Maybe there is a problem with the bus?')
+                        logger.warn("tx: TX-buffer full. " "Maybe there is a problem with the bus?")
                         self.tx_error = True
                     else:
-                        logger.debug('tx: TX-buffer full. '
-                                     'Maybe there is a problem with the bus?')
+                        logger.debug("tx: TX-buffer full. " "Maybe there is a problem with the bus?")
                 else:
-                    logger.error('tx: Unhandled CAN error: %s', e)
+                    logger.error("tx: Unhandled CAN error: %s", e)
                     break
 
             except Exception as e:
-                logger.error('tx: Unhandled CAN error: %s', e)
+                logger.error("tx: Unhandled CAN error: %s", e)
                 break
 
-        logger.error('tx: shutdown! Stopping application.')
+        logger.error("tx: shutdown! Stopping application.")
         # ask async to stop our application
         os.kill(os.getpid(), signal.SIGTERM)
-
 
     def recv(self):
         while True:
@@ -225,18 +215,14 @@ class LxaNetwork:
                     else:
                         continue
 
-                logger.debug('rx: %s', str(message))
+                logger.debug("rx: %s", str(message))
 
                 # lss messages
-                if(message.arbitration_id ==
-                   LSS_PROTCOL_IDENTIFIER_SLAVE_TO_MASTER):
-
+                if message.arbitration_id == LSS_PROTCOL_IDENTIFIER_SLAVE_TO_MASTER:
                     self._lss_set_response(message)
 
                 # sdo message
-                elif(message.arbitration_id in
-                     SDO_PROTCOL_IDENTIFIER_SLAVE_TO_MASTER):
-
+                elif message.arbitration_id in SDO_PROTCOL_IDENTIFIER_SLAVE_TO_MASTER:
                     sdo_message = parse_sdo_message(message)
                     node_id = sdo_message.node_id
 
@@ -251,17 +237,15 @@ class LxaNetwork:
                         pass
 
             except Exception as e:
-                logger.exception('rx: crashed with unhandled error %s', e)
-                logger.error('rx: shutdown! Stopping application.')
+                logger.exception("rx: crashed with unhandled error %s", e)
+                logger.error("rx: shutdown! Stopping application.")
                 # ask async to stop our application
                 os.kill(os.getpid(), signal.SIGTERM)
 
     # Canopen LSS #############################################################
     def _lss_set_response(self, response):
         async def __lss_set_response():
-            if(not self._pending_lss_request.done() and
-               not self._pending_lss_request.cancelled()):
-
+            if not self._pending_lss_request.done() and not self._pending_lss_request.cancelled():
                 self._pending_lss_request.set_result(response)
 
         asyncio.run_coroutine_threadsafe(
@@ -282,13 +266,12 @@ class LxaNetwork:
             return self._pending_lss_request.result()
 
         except asyncio.TimeoutError:
-            if(not self._pending_lss_request.done() and
-               not self._pending_lss_request.cancelled()):
+            if not self._pending_lss_request.done() and not self._pending_lss_request.cancelled():
                 self._pending_lss_request.set_result(None)
 
             return None
 
-    async def fast_scan_request(self, lss_id,  bit_checked, lss_sub, lss_next):
+    async def fast_scan_request(self, lss_id, bit_checked, lss_sub, lss_next):
         # TODO: check if we got the correct response
 
         # FIXME: sleep wird gebraucht weil RX nicht clean ist.
@@ -321,7 +304,7 @@ class LxaNetwork:
         known_bits = [0, 0, 0, 0]
 
         for i in range(len(mask)):
-            known_bits[i] = lss_ids[0][i] & (0xffffffff ^ mask[i])
+            known_bits[i] = lss_ids[0][i] & (0xFFFFFFFF ^ mask[i])
 
         return known_bits, mask
 
@@ -343,7 +326,7 @@ class LxaNetwork:
             start = [0, 0, 0, 0]
 
         if mask is None:
-            mask = [0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff]
+            mask = [0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF]
 
         # Check if node on Bus
         if not await self.fast_scan_request(0, 0x80, 0, 0):
@@ -372,12 +355,7 @@ class LxaNetwork:
 
             # Got to next round
             if lss_sub != 3:
-                response = await self.fast_scan_request(
-                    lss_id[lss_sub],
-                    0,
-                    lss_sub,
-                    lss_sub + 1
-                )
+                response = await self.fast_scan_request(lss_id[lss_sub], 0, lss_sub, lss_sub + 1)
 
                 if not response:
                     logger.debug("fast_scan: No next round")
@@ -392,9 +370,7 @@ class LxaNetwork:
 
         return lss_id
 
-    async def fast_scan_known_range_all(self, known_nodes=None, start=None,
-                                        mask=None):
-
+    async def fast_scan_known_range_all(self, known_nodes=None, start=None, mask=None):
         """
         Implements a fast scan that first tries to search for nodes from a list.
         Then in a range and then all addresses
@@ -468,12 +444,12 @@ class LxaNetwork:
             while self._running and self._interface_state:
                 await asyncio.sleep(1)
 
-                logger.debug('Nodes: %s', self.nodes)
+                logger.debug("Nodes: %s", self.nodes)
 
                 lss = await self.fast_scan_known_range_all(
                     known_nodes=self.lss_address_cache,
                     start=[0, 0, 0, 0],
-                    mask=[0x00000000, 0x000000ff, 0x000000ff, 0x0000ffff]
+                    mask=[0x00000000, 0x000000FF, 0x000000FF, 0x0000FFFF],
                 )
 
                 if lss is None:
@@ -483,7 +459,7 @@ class LxaNetwork:
                     self.lss_address_cache.append(lss)
                     self.loop.create_task(self.write_lss_address_cache())
 
-                logger.debug('fast_scan: lss: %s', lss)
+                logger.debug("fast_scan: lss: %s", lss)
 
                 # we dont need to search for nodes we already found
                 if lss in old_nodes:
@@ -504,20 +480,17 @@ class LxaNetwork:
                     node_id=node_id,
                 )
 
-                logger.info("fast_scan: Created new node with id {} for {}".format(
-                    node_id, lss))
+                logger.info("fast_scan: Created new node with id {} for {}".format(node_id, lss))
 
                 self._sdo_queues[node_id] = Queue()
 
-                response = await self.lss_request(
-                    gen_lss_switch_mode_global_message(LSS_MODE.OPERATION)
-                )
+                response = await self.lss_request(gen_lss_switch_mode_global_message(LSS_MODE.OPERATION))
 
                 if not response:
                     logger.debug("fast_scan: Setting node ID not working")
 
         except LxaShutdown:
-            logger.debug('fast_scan: shutdown')
+            logger.debug("fast_scan: shutdown")
 
     async def lss_ping(self):
         try:
@@ -527,15 +500,14 @@ class LxaNetwork:
                         continue
 
                     if not await node.ping():
-                        logger.warning(
-                            'lss_ping: node %s does not respond', node)
+                        logger.warning("lss_ping: node %s does not respond", node)
 
                         self.nodes.pop(node_id)
 
                 await asyncio.sleep(2)
 
         except Exception:
-            logger.debug('lss_ping: shutdown')
+            logger.debug("lss_ping: shutdown")
 
     # Canopen SDO #############################################################
     async def send_message(self, message):
