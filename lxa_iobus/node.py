@@ -16,7 +16,7 @@ from lxa_iobus.canopen import (
     gen_sdo_initiate_upload,
     SDO_TRANSFER_TYPE_SIZE,
     gen_sdo_segment_upload,
-    SDO_Abort,
+    SdoAbort,
 )
 
 DEFAULT_TIMEOUT = 1
@@ -88,7 +88,7 @@ class LxaNode:
     async def sdo_read(self, index, sub_index, timeout=DEFAULT_TIMEOUT):
         async with self._lock:
             # Depending on the answer we do:
-            #  * normal(Segment) transfare > 4 byte: multiple transactions
+            #  * normal(Segment) transfer > 4 byte: multiple transactions
             #  * expedited <= 4 byte: one transaction
             message = gen_sdo_initiate_upload(
                 node_id=self.node_id,
@@ -103,7 +103,7 @@ class LxaNode:
 
             # Something went wrong on the node side
             if response.type == "abort":
-                raise SDO_Abort(
+                raise SdoAbort(
                     node_id=response.node_id,
                     index=response.index,
                     sub_index=response.subindex,
@@ -132,10 +132,10 @@ class LxaNode:
             if response.readable_transfer_type == "DataNoSize":
                 return response.data
 
-            # Segmented transfare
+            # Segmented transfer
             # We get the size of data to come
             if not response.readable_transfer_type == "Size":
-                raise Exception("Unknown transfare type")
+                raise Exception("Unknown transfer type")
 
             transfer_size = struct.unpack("<L", response.data)[0]
 
@@ -160,7 +160,7 @@ class LxaNode:
                     raise TimeoutError
 
                 if response.type == "abort":
-                    raise SDO_Abort(
+                    raise SdoAbort(
                         node_id=response.node_id,
                         index=response.index,
                         sub_index=response.subindex,
@@ -216,7 +216,7 @@ class LxaNode:
                     raise TimeoutError
 
                 if response.type == "abort":
-                    raise SDO_Abort(
+                    raise SdoAbort(
                         node_id=response.node_id,
                         index=response.index,
                         sub_index=response.subindex,
@@ -250,7 +250,7 @@ class LxaNode:
                 raise TimeoutError
 
             if response.type == "abort":
-                raise SDO_Abort(
+                raise SdoAbort(
                     node_id=response.node_id,
                     index=response.index,
                     sub_index=response.subindex,
@@ -293,7 +293,7 @@ class LxaNode:
                     raise TimeoutError
 
                 if response.type == "abort":
-                    raise SDO_Abort(
+                    raise SdoAbort(
                         node_id=response.node_id,
                         index=response.index,
                         sub_index=response.subindex,
@@ -310,7 +310,7 @@ class LxaNode:
                 toggle ^= True
                 transfer_size -= length
 
-            # Maybe the complete flag is not corectly set
+            # Maybe the complete flag is not correctly set
             raise Exception("Something went wrong with segmented download")
 
     # public API ##############################################################
@@ -375,7 +375,7 @@ class LxaNode:
                 # vendor-specific fields fails.
                 try:
                     value = await self.sdo_read(sdo, sub_idx)
-                except SDO_Abort:
+                except SdoAbort:
                     continue
 
                 if field_type is int:
