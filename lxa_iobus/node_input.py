@@ -12,12 +12,12 @@ class Input:
         self.node = node
 
     async def get_pin_count(self):
-        pin_count = await self.node.sdo_read(self.INDEX, (self.channel*2)+1)
+        pin_count = await self.node.sdo_read(self.INDEX, (self.channel * 2) + 1)
         pin_count = array2int(pin_count)
         self.pins = pin_count
 
     async def read(self):
-        tmp = await self.node.sdo_read(self.INDEX, (self.channel*2+2))
+        tmp = await self.node.sdo_read(self.INDEX, (self.channel * 2 + 2))
 
         return array2int(tmp)
 
@@ -39,17 +39,17 @@ class Output(Input):
 
     async def write(self, mask, data):
         self.output_state = (self.output_state & (~mask)) | (data & mask)
-        data = int2array(((mask & 0xffff) << 16) | (data & 0xffff))
+        data = int2array(((mask & 0xFFFF) << 16) | (data & 0xFFFF))
         data = bytearray(data)
 
-        await self.node.sdo_write(self.INDEX, (self.channel*2+2), data)
+        await self.node.sdo_write(self.INDEX, (self.channel * 2 + 2), data)
 
     async def restore_state(self):
-        await self.write(0xffff, self.output_state)
+        await self.write(0xFFFF, self.output_state)
 
 
 class ADC:
-    INDEX = 0x2adc
+    INDEX = 0x2ADC
 
     def __init__(self, address, channel, node):
         self.address = address
@@ -59,13 +59,11 @@ class ADC:
         self.offset = 0
 
     async def get_config(self):
-        scale = await self.node.sdo_read(
-            self.INDEX, ((self.channel+1) << 2)+2)
+        scale = await self.node.sdo_read(self.INDEX, ((self.channel + 1) << 2) + 2)
 
         scale = struct.unpack("<f", scale)[0]
 
-        offset = await self.node.sdo_read(
-            self.INDEX, ((self.channel+1) << 2)+1)
+        offset = await self.node.sdo_read(self.INDEX, ((self.channel + 1) << 2) + 1)
 
         offset = struct.unpack("<i", offset)[0]
 
@@ -73,10 +71,10 @@ class ADC:
         self.scale = scale
 
     async def read(self):
-        tmp = await self.node.sdo_read(self.INDEX, ((self.channel+1) << 2))
+        tmp = await self.node.sdo_read(self.INDEX, ((self.channel + 1) << 2))
         tmp = struct.unpack("<H", tmp)[0]
 
-        return (tmp+self.offset)*self.scale
+        return (tmp + self.offset) * self.scale
 
     def info(self):
         return {
