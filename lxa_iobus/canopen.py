@@ -5,19 +5,19 @@ from time import time
 from can import Message
 
 
-LSS_PROTCOL_IDENTIFIER_SLAVE_TO_MASTER = 2020
-LSS_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE = 2021
+LSS_PROTOCOL_IDENTIFIER_SLAVE_TO_MASTER = 2020
+LSS_PROTOCOL_IDENTIFIER_MASTER_TO_SLAVE = 2021
 
 LSS_COMMAND_SPECIFIER_SWITCH_MODE_GLOBAL = 0x04
 LSS_COMMAND_SPECIFIER_CONFIGURE_NODE_ID = 0x11
 LSS_COMMAND_SPECIFIER_FAST_SCAN = 0x51
 LSS_COMMAND_SPECIFIER_IDENTIFY_SLAVE = 0x4F
 
-SDO_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE_PREFIX = 0x600
-SDO_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE = range(
-    SDO_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE_PREFIX + 1, SDO_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE_PREFIX + 0b1111111 + 1
+SDO_PROTOCOL_IDENTIFIER_MASTER_TO_SLAVE_PREFIX = 0x600
+SDO_PROTOCOL_IDENTIFIER_MASTER_TO_SLAVE = range(
+    SDO_PROTOCOL_IDENTIFIER_MASTER_TO_SLAVE_PREFIX + 1, SDO_PROTOCOL_IDENTIFIER_MASTER_TO_SLAVE_PREFIX + 0b1111111 + 1
 )
-SDO_PROTCOL_IDENTIFIER_SLAVE_TO_MASTER = range(0x581, 0x5FF + 1)
+SDO_PROTOCOL_IDENTIFIER_SLAVE_TO_MASTER = range(0x581, 0x5FF + 1)
 
 # The length of the data is stored in the data field
 SDO_TRANSFER_TYPE_SIZE = 0b01
@@ -63,12 +63,12 @@ SDO_ABORT_CODES = {
 }
 
 
-class LSS_MODE:
+class LssMode:
     OPERATION = 0
     CONFIGURATION = 1
 
 
-class SDO_Abort(Exception):
+class SdoAbort(Exception):
     def __init__(self, node_id, index, sub_index, error_code):
         self.node_id = node_id
         self.index = index
@@ -102,12 +102,12 @@ class SdoMessage:
 
 
 def gen_lss_switch_mode_global_message(lss_mode):
-    if lss_mode not in (LSS_MODE.OPERATION, LSS_MODE.CONFIGURATION):
+    if lss_mode not in (LssMode.OPERATION, LssMode.CONFIGURATION):
         raise ValueError
 
     return Message(
         timestamp=time(),
-        arbitration_id=LSS_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE,
+        arbitration_id=LSS_PROTOCOL_IDENTIFIER_MASTER_TO_SLAVE,
         data=struct.pack(
             "<BBxxxxxx",
             LSS_COMMAND_SPECIFIER_SWITCH_MODE_GLOBAL,
@@ -127,7 +127,7 @@ def gen_lss_configure_node_id_message(node_id):
 
     return Message(
         timestamp=time(),
-        arbitration_id=LSS_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE,
+        arbitration_id=LSS_PROTOCOL_IDENTIFIER_MASTER_TO_SLAVE,
         data=struct.pack(
             "<BBxxxxxx",
             LSS_COMMAND_SPECIFIER_CONFIGURE_NODE_ID,
@@ -140,7 +140,7 @@ def gen_lss_configure_node_id_message(node_id):
 def gen_invalidate_node_ids_message():
     return Message(
         timestamp=time(),
-        arbitration_id=LSS_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE,
+        arbitration_id=LSS_PROTOCOL_IDENTIFIER_MASTER_TO_SLAVE,
         data=struct.pack(
             "<BBxxxxxx",
             LSS_COMMAND_SPECIFIER_CONFIGURE_NODE_ID,
@@ -165,7 +165,7 @@ def gen_lss_fast_scan_message(id_number, bit_checked, lss_sub, lss_next):
 
     return Message(
         timestamp=time(),
-        arbitration_id=LSS_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE,
+        arbitration_id=LSS_PROTOCOL_IDENTIFIER_MASTER_TO_SLAVE,
         data=struct.pack(
             "<BLBBB",
             LSS_COMMAND_SPECIFIER_FAST_SCAN,
@@ -179,7 +179,7 @@ def gen_lss_fast_scan_message(id_number, bit_checked, lss_sub, lss_next):
 
 
 def parse_lss_result(message):
-    if not message.arbitration_id == LSS_PROTCOL_IDENTIFIER_SLAVE_TO_MASTER:
+    if not message.arbitration_id == LSS_PROTOCOL_IDENTIFIER_SLAVE_TO_MASTER:
         raise ValueError
 
     command_specifier = message.data[0]
@@ -190,7 +190,7 @@ def parse_lss_result(message):
 
 
 def parse_lss_fast_scan_result(message):
-    if not message.arbitration_id == LSS_PROTCOL_IDENTIFIER_SLAVE_TO_MASTER:
+    if not message.arbitration_id == LSS_PROTOCOL_IDENTIFIER_SLAVE_TO_MASTER:
         raise ValueError
 
     command_specifier = message.data[0]
@@ -223,7 +223,7 @@ def gen_sdo_initiate_download(node_id, type, index, sub_index, data):
 
     return Message(
         timestamp=time(),
-        arbitration_id=SDO_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE_PREFIX | node_id,
+        arbitration_id=SDO_PROTOCOL_IDENTIFIER_MASTER_TO_SLAVE_PREFIX | node_id,
         data=struct.pack(
             "<BHB4s",
             (command_specifier << 5) | (n << 2) | type,
@@ -267,7 +267,7 @@ def gen_sdo_segment_download(node_id, toggle, complete, seg_data):
 
     return Message(
         timestamp=time(),
-        arbitration_id=SDO_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE_PREFIX | node_id,
+        arbitration_id=SDO_PROTOCOL_IDENTIFIER_MASTER_TO_SLAVE_PREFIX | node_id,
         data=struct.pack(
             "<B7s",
             (command_specifier << 5) | (toggle << 4) | (n << 1) | complete,
@@ -290,7 +290,7 @@ def gen_sdo_initiate_upload(node_id, index, sub_index):
 
     return Message(
         timestamp=time(),
-        arbitration_id=SDO_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE_PREFIX | node_id,
+        arbitration_id=SDO_PROTOCOL_IDENTIFIER_MASTER_TO_SLAVE_PREFIX | node_id,
         data=struct.pack(
             "<BHB4s",
             (command_specifier << 5),
@@ -321,7 +321,7 @@ def gen_sdo_segment_upload(node_id, toggle):
 
     return Message(
         timestamp=time(),
-        arbitration_id=SDO_PROTCOL_IDENTIFIER_MASTER_TO_SLAVE_PREFIX | node_id,
+        arbitration_id=SDO_PROTOCOL_IDENTIFIER_MASTER_TO_SLAVE_PREFIX | node_id,
         data=struct.pack(
             "<B7s",
             (command_specifier << 5) | (toggle << 4),
