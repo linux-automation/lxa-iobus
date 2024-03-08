@@ -5,7 +5,7 @@ PYTHON_TESTING_ENV=$(PYTHON_VENV)-qa
 INTERFACE=can0
 LSS_ADDRESS_CACHE_FILE=lss-address-cache.json
 
-$(PYTHON_VENV)/.created: setup.py
+$(PYTHON_VENV)/.created: pyproject.toml
 	rm -rf $(PYTHON_VENV) && \
 	$(PYTHON) -m venv $(PYTHON_VENV) && \
 	. $(PYTHON_VENV)/bin/activate && \
@@ -32,24 +32,24 @@ server: env
 		$(args)
 
 # packaging environment #######################################################
-$(PYTHON_PACKAGING_VENV)/.created: REQUIREMENTS.packaging.txt
+$(PYTHON_PACKAGING_VENV)/.created:
 	rm -rf $(PYTHON_PACKAGING_VENV) && \
 	$(PYTHON) -m venv $(PYTHON_PACKAGING_VENV) && \
 	. $(PYTHON_PACKAGING_VENV)/bin/activate && \
 	python3 -m pip install --upgrade pip && \
-	python3 -m pip install -r REQUIREMENTS.packaging.txt
+	python3 -m pip install build twine && \
 	date > $(PYTHON_PACKAGING_VENV)/.created
 
 .PHONY: packaging-env build _release
 
 packaging-env: $(PYTHON_PACKAGING_VENV)/.created
 
-sdist: packaging-env
+build: packaging-env
 	. $(PYTHON_PACKAGING_VENV)/bin/activate && \
 	rm -rf dist *.egg-info && \
-	./setup.py sdist
+	python3 -m build
 
-_release: sdist
+_release: build
 	. $(PYTHON_PACKAGING_VENV)/bin/activate && \
 	twine upload dist/*
 

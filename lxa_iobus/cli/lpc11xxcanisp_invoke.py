@@ -29,7 +29,7 @@ class CanOpen:
         self.node.sdo.download(0x2B07, 0, struct.pack("I", 0x12345678))
 
 
-def invoke_rom_loader():
+def main():
     can = CanOpen()
     can.setup()
 
@@ -38,4 +38,4 @@ def invoke_rom_loader():
 
 
 if __name__ == "__main__":
-    invoke_rom_loader()
+    main()

@@ -1,3 +1,40 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lxa-iobus"
+description = "Linux Automation IOBus Server"
+version = "0.4.2"
+authors = [
+  { name = "Linux Automation GmbH", email = "info@linux-automation.com" },
+]
+readme = "README.rst"
+license = { file = "LICENSE.txt" }
+dependencies = [
+  "aiohttp~=3.8",
+  "aiohttp-json-rpc==0.13.3",
+  "canopen",
+  "python-can",
+  "janus",
+]
+
+[project.scripts]
+lxa-iobus-server = "lxa_iobus.cli.server:main"
+lxa-iobus-lpc11xxcanisp-invoke = "lxa_iobus.cli.lpc11xxcanisp_invoke:main"
+lxa-iobus-lpc11xxcanisp-program = "lxa_iobus.cli.lpc11xxcanisp_program:main"
+
+[tool.setuptools]
+packages = [
+  "lxa_iobus",
+  "lxa_iobus.cli",
+  "lxa_iobus.lpc11xxcanisp",
+  "lxa_iobus.lpc11xxcanisp.firmware",
+  "lxa_iobus.lpc11xxcanisp.loader",
+  "lxa_iobus.server",
+]
+include-package-data = true
+
 [tool.ruff]
 line-length = 119
 
