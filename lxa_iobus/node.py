@@ -193,12 +193,12 @@ class LxaNode:
 
     async def sdo_write(self, index, sub_index, data, timeout=DEFAULT_TIMEOUT):
         async with self._lock:
-            #  * normal(Segment) transfare > 4 byte: multiple transactions
+            #  * normal(Segment) transfer > 4 byte: multiple transactions
             #  * expedited <= 4 byte: one transaction
 
             if len(data) <= 4:
                 #######################################
-                # expedited transfare
+                # expedited transfer
                 message = gen_sdo_initiate_download(
                     node_id=self.node_id,
                     index=index,
@@ -229,10 +229,10 @@ class LxaNode:
                 return
 
             ########################################
-            # Segment transfare
+            # Segment transfer
             transfer_size = len(data)
 
-            # Send the length of the transfare
+            # Send the length of the transfer
             message = gen_sdo_initiate_download(
                 node_id=self.node_id,
                 index=index,

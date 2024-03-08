@@ -9,7 +9,7 @@ from canopen.sdo.exceptions import SdoCommunicationError
 
 
 class CanOpen:
-    """Minimal Setup to controll one ethmux"""
+    """Minimal Setup to control one ethmux"""
 
     def __init__(self, channel="can0", node_id=1):
         self.node_id = node_id

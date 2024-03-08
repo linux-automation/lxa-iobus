@@ -47,10 +47,10 @@ The following figure shows the structure of the LXA IOBus system:
   current state of the bus and connected devices.
 * **Linux SocketCAN**:
   The LXA IOBus Server uses `SocketCAN <https://en.wikipedia.org/wiki/SocketCAN>`_
-  to interfact with the CAN-bus.
+  to interact with the CAN-bus.
 * **Node-specific electrical interface**:
-  Every LXA IOBus node has an application-specific specialiced electiral interface
+  Every LXA IOBus node has an application-specific specialised electrical interface
   that is designed to perform different automation tasks.
 * **CAN-Bus**:
   This is the actual electrical interface that connects server and nodes.
-  This is the same CAN bus inteface you may know from many automotive applications.
+  This is the same CAN bus interface you may know from many automotive applications.

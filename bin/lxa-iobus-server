@@ -137,7 +137,7 @@ except OSError as e:
     if e.errno == errno.ENODEV:  # can interface not available
         exit("interface {} not available".format(args.interface))
 
-loop.create_task(server.flush_state_periodicly())
+loop.create_task(server.flush_state_periodically())
 
 if args.shell:
 

@@ -276,8 +276,8 @@ class LxaNetwork:
     async def fast_scan_request(self, lss_id, bit_checked, lss_sub, lss_next):
         # TODO: check if we got the correct response
 
-        # FIXME: sleep wird gebraucht weil RX nicht clean ist.
-        # wir krigen Pakete vom der letzten anfrage
+        # FIXME: sleep is required because RX may not be clean
+        # and we may still get replies from the previous request.
 
         response = await self.lss_request(
             gen_lss_fast_scan_message(lss_id, bit_checked, lss_sub, lss_next),
@@ -317,11 +317,11 @@ class LxaNetwork:
         fast_scan_request: fast_scan_request method
         start: Start value for the LSS address (default: [0, 0, 0, 0])
         mask: Only bits that are 0 are going to be tested.
-              (dafault: [0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff])
+              (default: [0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff])
 
         returns:
           None: No node could be selected
-          LSS Adress
+          LSS Address
         """
 
         if start is None:
@@ -366,7 +366,7 @@ class LxaNetwork:
 
         # Final select
         if not await self.fast_scan_request(lss_id[3], 0, 3, 0):
-            logger.debug("fast_scan: Final round fail ")
+            logger.debug("fast_scan: Final round fail")
 
             return None
 

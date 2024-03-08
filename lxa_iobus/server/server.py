@@ -131,7 +131,7 @@ class LXAIOBusServer:
                 callback = partial(self.can_isp.write_flash, file_name)
                 await self.loop.run_in_executor(None, callback)
 
-                self.can_isp.console_log("Reseting node")
+                self.can_isp.console_log("Resetting node")
                 await self.loop.run_in_executor(None, self.can_isp.reset)
 
                 self.can_isp.console_log("Flashing done")
@@ -707,7 +707,7 @@ class LXAIOBusServer:
     def flush_state_sync(self, wait=True):
         self.rpc.worker_pool.run_sync(partial(self.rpc.notify, "state", pformat(self.state)), wait=wait)
 
-    async def flush_state_periodicly(self):
+    async def flush_state_periodically(self):
         while self._running:
             await self.flush_state()
             await asyncio.sleep(1)
