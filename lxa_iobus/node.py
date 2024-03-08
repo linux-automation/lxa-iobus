@@ -125,7 +125,8 @@ class LxaNode:
 
             # We get a packet where the size field is used
             if response.readable_transfer_type == "DataWithSize":
-                return response.data[0 : 4 - response.number_of_bytes_not_used]
+                size = 4 - response.number_of_bytes_not_used
+                return response.data[0:size]
 
             # We got a packet data uses the packet length as size
             # Is not used in the firmware
@@ -277,11 +278,13 @@ class LxaNode:
                 if len(data) == offset + length:
                     complete = True
 
+                end = offset + length
+
                 message = gen_sdo_segment_download(
                     node_id=self.node_id,
                     toggle=toggle,
                     complete=complete,
-                    seg_data=data[offset : offset + length],
+                    seg_data=data[offset:end],
                 )
 
                 response = await self._send_sdo_message(

@@ -3,7 +3,6 @@
 
 import canopen
 import struct
-import sys
 import time
 import argparse
 import logging
@@ -51,7 +50,7 @@ class IspSdoAbortedError(Exception):
     def __str__(self):
         text = "Code 0x{:08X}".format(self.code)
         reason = self.str()
-        if not reason is None:
+        if reason is not None:
             text += ", " + reason
         return text
 
@@ -99,50 +98,28 @@ class CanIsp:
 
     part_ids = {
         0x041E502B: "LPC1111FHN33/101",
-        0x2516D02B: "LPC1111FHN33/101",
         0x2516D02B: "LPC1111FHN33/102",
         0x0416502B: "LPC1111FHN33/201",
-        0x2516902B: "LPC1111FHN33/201",
         0x2516902B: "LPC1111FHN33/202",
         0x00010013: "LPC1111FHN33/103",
         0x00010012: "LPC1111FHN33/203",
         0x042D502B: "LPC1112FHN33/101",
-        0x2524D02B: "LPC1112FHN33/101",
         0x2524D02B: "LPC1112FHN33/102",
         0x0425502B: "LPC1112FHN33/201",
-        0x2524902B: "LPC1112FHN33/201",
-        0x2524902B: "LPC1112FHN33/202",
         0x2524902B: "LPC1112FHI33/202",
         0x00020023: "LPC1112FHN33/103",
-        0x00020022: "LPC1112FHN33/203",
         0x00020022: "LPC1112FHI33/203",
         0x0434502B: "LPC1113FHN33/201",
-        0x2532902B: "LPC1113FHN33/201",
         0x2532902B: "LPC1113FHN33/202",
-        0x0434102B: "LPC1113FHN33/301",
-        0x2532102B: "LPC1113FHN33/301",
-        0x2532102B: "LPC1113FHN33/302",
         0x0434102B: "LPC1113FBD48/301",
-        0x2532102B: "LPC1113FBD48/301",
         0x2532102B: "LPC1113FBD48/302",
-        0x00030030: "LPC1113FBD48/303",
         0x00030032: "LPC1113FHN33/203",
         0x00030030: "LPC1113FHN33/303",
         0x0444502B: "LPC1114FHN33/201",
-        0x2540902B: "LPC1114FHN33/201",
         0x2540902B: "LPC1114FHN33/202",
-        0x0444102B: "LPC1114FHN33/301",
-        0x2540102B: "LPC1114FHN33/301",
-        0x2540102B: "LPC1114FHN33/302",
-        0x2540102B: "LPC1114FHI33/302",
         0x0444102B: "LPC1114FBD48/301",
-        0x2540102B: "LPC1114FBD48/301",
-        0x2540102B: "LPC1114FBD48/302",
-        0x00040040: "LPC1114FBD48/303",
         0x00040042: "LPC1114FHN33/203",
-        0x00040040: "LPC1114FHN33/303",
         0x00040060: "LPC1114FBD48/323",
-        0x00040070: "LPC1114FBD48/333",
         0x00040070: "LPC1114FHN33/333",
         0x00040040: "LPC1114FHI33/303",
         0x2540102B: "LPC11D14FBD100/302",
@@ -331,8 +308,9 @@ class CanIsp:
             logging.info("Send block %d", block_num)
 
             start_offset = block_size * (block_num - start_sector)
+            end_offset = start_offset + block_size
 
-            block = data[start_offset : start_offset + block_size]
+            block = data[start_offset:end_offset]
             logging.info("Block length %d", len(block))
             self.write_to_ram(self.ram_offset, block)  # Transfer data block to the RAM of the MCU
 
@@ -351,13 +329,16 @@ def fix_checksum(data):
     For more info see: UM10398 26.3.3 Criterion for Valid User Code.
     """
 
-    vector_table = data[0 : 4 * 7]  # First 7 entrys
+    size = 4 * 7
+    vector_table = data[0:size]  # First 7 entrys
     vector_table = struct.unpack("iiiiiii", vector_table)
 
     checksum = 0 - (sum(vector_table))
     checksum = struct.pack("i", checksum)
 
-    data = data[0 : 4 * 7] + checksum + data[4 * 8 :]
+    pre = 4 * 7
+    post = 4 * 8
+    data = data[0:pre] + checksum + data[post:]
     return data
 
 
