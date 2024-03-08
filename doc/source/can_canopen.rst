@@ -2,7 +2,7 @@ CAN Basics
 ==========
 
 CAN and CANopen are, when compared to modern Ethernet and IP,
-quite simple protcols.
+quite simple protocols.
 Most software developers are however more familiar with Ethernet
 and IP and less with CAN and CANopen.
 
@@ -62,7 +62,7 @@ Reliable transmission
 CAN makes a good amount of effort to make sure all nodes on the
 bus share a common understanding of the information transmitted:
 Every message contains a checksum to make sure no bit-errors
-occour on the bus.
+occur on the bus.
 
 Additionally all nodes on the bus do a handshake for every message
 that ensures that either all or no node received the message.
@@ -86,9 +86,9 @@ Let's take a look at the following scenarios:
   been received by any node.
   This can happen if there are only two nodes on a bus
   and one is not powered or disconnected due to a faulty
-  conenction.
+  connection.
 * **Two other nodes on the bus and the checksum is OK**:
-  Both receiving nodes send an acknowlege after the end
+  Both receiving nodes send an acknowledge after the end
   of the message.
   All three nodes assume that every other node has
   received the message correctly.

@@ -58,7 +58,7 @@ a single LXA IOBus device:
 
    CAN structure for a single LXA IOBus device on a short bus.
    The 120Ω termination resistor is connected between CAN_H and CAN_L
-   and (for short busses) may be placed anywhere on the bus.
+   and (for short buses) may be placed anywhere on the bus.
 
 In this example the LXA IOBus device and the CAN adapter
 are the only devices on the CAN bus.
@@ -168,7 +168,7 @@ differential impedance should be used for the CAN bus.
 For GND and power supply use wires with a sufficient cross section to keep
 the power supply and CAN bus common mode voltage in the allowed ranges.
 
-For short busses flat ribbon cables present a cheap and easy-to-install
+For short buses flat ribbon cables present a cheap and easy-to-install
 alternative to UTP cabling.
 Plugs and sockets are available from many manufacturers, for example
 *L17DEFRA09P* and *L17DEFRA09S* from Amphenol.

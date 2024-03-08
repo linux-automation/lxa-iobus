@@ -21,7 +21,7 @@ class Pin:
 
     async def write(self, value):
         if self.pin_type != "output":
-            raise RuntimeError("Attemped to write to an {} channel".format(self.pin_type))
+            raise RuntimeError("Attempted to write to an {} channel".format(self.pin_type))
 
         value = value << self.bit
         mask = 1 << self.bit
@@ -63,7 +63,7 @@ class NodeDriver:
 class Iobus4Do3Di3AiDriver(NodeDriver):
     """LXA IOBus 4DO-3DI-3AI driver
 
-    The follwing pins are provided by this driver:
+    The following pins are provided by this driver:
 
       - OUT0-OUT3: Digital outputs
       - IN0-IN2: Digital inputs
@@ -98,7 +98,7 @@ class PTXIOMuxDriver(NodeDriver):
     This board is deprecated by the 4DO-3DI-3AI and does
     not get any firmware upgrades.
 
-    The follwing pins are provided by this driver:
+    The following pins are provided by this driver:
 
       - OUT0-OUT3: Digital outputs
       - IN4-IN6: Digital inputs
@@ -130,7 +130,7 @@ class PTXIOMuxDriver(NodeDriver):
 class EthernetMuxDriver(NodeDriver):
     """LXA Ethernet-Mux node driver
 
-    The follwing pins are provided by this driver:
+    The following pins are provided by this driver:
 
       - SW: Switch between Ethernet port A and B
       - SW_EXT: Status of the GPIO override input

@@ -67,7 +67,7 @@ class IspCompareError(Exception):
 
 class CanIsp:
     DATA_SIZES = {8: "B", 16: "H", 32: "I"}
-    ram_offset = 0x10000500  # Offset to savely usable RAM
+    ram_offset = 0x10000500  # Offset to safely usable RAM
 
     object_directory = {
         "Device Type": [0x1000, 0, 32],
@@ -216,7 +216,7 @@ class CanIsp:
     def unlock(self):
         """
         Unlocks write operations
-        Needs to be called befor writing to RAM or Flash
+        Needs to be called before writing to RAM or Flash
         """
 
         self.send("Unlock Code", 23130)
@@ -258,12 +258,12 @@ class CanIsp:
         self.send("Copy Length", length)
 
     def go(self, addr):
-        """Jumps to given addresse"""
+        """Jumps to given address"""
 
         self.send("Execution Address", addr)
         self.send("Program Control", 1)  # Trigger jump
 
-    def erase_flash_secotrs(self, start, stop):
+    def erase_flash_sectors(self, start, stop):
         """Clear given flash range"""
 
         if stop < start:
@@ -318,7 +318,7 @@ class CanIsp:
 
         return self._get(obj[0], obj[1], None)  # Get uint32 as bytearray
 
-    def compare(self, addr_1, addr_2, lenght):
+    def compare(self, addr_1, addr_2, length):
         """
         Takes two addresses and a length and compare the data.
         Raises IspCompareError if a mismatch is found.
@@ -327,7 +327,7 @@ class CanIsp:
         try:
             self.send("Compare Address 1", addr_1)
             self.send("Compare Address 2", addr_2)
-            self.send("Compare Length", lenght)
+            self.send("Compare Length", length)
 
         except IspSdoAbortedError as e:
             if e.str() == "COMPARE_ERROR":
@@ -336,7 +336,7 @@ class CanIsp:
                 raise IspCompareError(offset) from e
 
     def flash_image(self, start, data):
-        logging.info("Data to be writen: %d Byte", len(data))
+        logging.info("Data to be written: %d Byte", len(data))
 
         block_size = 4096
 
@@ -347,7 +347,7 @@ class CanIsp:
 
         # data must be multiple of block size
         # TODO add option for smaller block size
-        #      Supporte are: 256, 512, 1024, 4096.
+        #      Supported are: 256, 512, 1024, 4096.
 
         stuffing = len(data) % block_size
 
@@ -355,12 +355,12 @@ class CanIsp:
             logging.info("Date buffer is extended by %d", stuffing)
             data += b"\xff" * (block_size - stuffing)
 
-        logging.info("Data to be writen %d Bytes", len(data))
+        logging.info("Data to be written %d Bytes", len(data))
         logging.info("Start sector %d", start_sector)
 
         sectors = len(data) // block_size
 
-        assert (len(data) % block_size) == 0, "Need to erease extra sector to fit date: %d" % len(data)
+        assert (len(data) % block_size) == 0, "Need to erase extra sector to fit date: %d" % len(data)
 
         logging.info("Sectors to write %d", sectors)
 
@@ -373,10 +373,10 @@ class CanIsp:
             start_sector + sectors - 1,
         )
 
-        # TODO: Add check if we need to erease block use Blank check sectors
+        # TODO: Add check if we need to erase block use Blank check sectors
         self.unlock()  # Unlock writes
         self.prepare_flash_sectors(start_sector, start_sector + sectors - 1)
-        self.erase_flash_secotrs(start_sector, start_sector + sectors - 1)
+        self.erase_flash_sectors(start_sector, start_sector + sectors - 1)
 
         blocks = sectors
 
@@ -404,9 +404,9 @@ class CanIsp:
     # helper methods ##########################################################
     def fix_checksum(self, data):
         """
-        This generate the checksum in the vectro table.
-        This is needed for the LPC11CXX und probebly all Cortex-M0.
-        and is normaly done somewhere in the swd programming chain.
+        This generate the checksum in the vector table.
+        This is needed for the LPC11CXX und probably all Cortex-M0.
+        and is normally done somewhere in the swd programming chain.
         For more info see: UM10398 26.3.3 Criterion for Valid User Code.
         """
         # First 7 entries:

@@ -1,0 +1,2 @@
+[codespell]
+skip = ./.git,./build,./venv,./env,./env-qa,./env-packaging,./node_modules,./lxa_iobus.egg-info,./lxa_iobus/server/static/lib

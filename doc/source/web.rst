@@ -28,7 +28,7 @@ output are available.
 Read the manual for the specific node for more
 information on specific options.
 
-The following fiels are available for every node:
+The following fields are available for every node:
 
 * **Name:** The logical name for this device.
   This name is used to identify this node on the :term:`REST` interface.
