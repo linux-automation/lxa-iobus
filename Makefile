@@ -55,9 +55,14 @@ $(PYTHON_TESTING_ENV)/.created:
 	python3 -m pip install ruff && \
 	date > $(PYTHON_TESTING_ENV)/.created
 
-.PHONY: qa qa-ruff qa-ruff-fix
+node_modules/.created:
+	rm -rf node_modules && \
+	npm install -D prettier prettier-plugin-toml && \
+	date > node_modules/.created
 
-qa: qa-ruff
+.PHONY: qa qa-ruff qa-ruff-fix qa-prettier
+
+qa: qa-ruff qa-prettier
 
 qa-ruff: $(PYTHON_TESTING_ENV)/.created
 	. $(PYTHON_TESTING_ENV)/bin/activate && \
@@ -66,3 +71,9 @@ qa-ruff: $(PYTHON_TESTING_ENV)/.created
 qa-ruff-fix: $(PYTHON_TESTING_ENV)/.created
 	. $(PYTHON_TESTING_ENV)/bin/activate && \
 	ruff format && ruff check --fix
+
+qa-prettier: node_modules/.created
+	npx prettier --check pyproject.toml
+	npx prettier --check lxa_iobus/server/static/index.html
+	npx prettier --check lxa_iobus/server/static/main.js
+	npx prettier --check lxa_iobus/server/static/style.css
