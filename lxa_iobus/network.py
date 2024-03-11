@@ -24,7 +24,7 @@ from lxa_iobus.canopen import (
 )
 from lxa_iobus.node import LxaNode
 
-logger = logging.getLogger("lx-iobus.network")
+logger = logging.getLogger("lxa-iobus.network")
 
 
 class LxaShutdown(Exception):
