@@ -280,3 +280,6 @@ tags
 lss-address-cache.json
 
 .idea
+/node_modules
+/package-lock.json
+/package.json

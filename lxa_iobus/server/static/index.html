@@ -1,8 +1,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <link rel="stylesheet" type="text/css" href="/static/lib/pure-min.css">
-    <link rel="stylesheet" type="text/css" href="/static/style.css">
+    <link rel="stylesheet" type="text/css" href="/static/lib/pure-min.css" />
+    <link rel="stylesheet" type="text/css" href="/static/style.css" />
     <title>LXA IOBus Server</title>
   </head>
   <body>
@@ -12,7 +12,6 @@
       <div id="content">
         <div id="ractive"></div>
       </div>
-
     </div>
 
     <script id="main" type="text/html">
@@ -177,9 +176,10 @@
 
     <script id="isp" type="text/html">
       <h3>ISP Console</h3>
-      <pre>{{#isp_console}}{{.}}
-{{/}}</pre>
-
+      <pre>
+{{#isp_console}}{{.}}
+{{/}}</pre
+      >
     </script>
 
     <script id="firmware-files" type="text/html">
@@ -191,44 +191,52 @@
         </thead>
         <tbody>
           {{#firmware.upstream_files}}
-            <tr>
-              <td>{{.}}</td>
-            </tr>
+          <tr>
+            <td>{{.}}</td>
+          </tr>
           {{/}}
         </tbody>
       </table>
 
-      {{#if firmware.allow_custom_firmware}}
-        {{#if firmware.local_files}}
-          <br>
-          <table class="pure-table" width="100%">
-            <thead>
-              <tr>
-                <th>Local Firmware Files</th>
-              </tr>
-            </thead>
-            <tbody>
-              {{#firmware.local_files}}
-                <tr>
-                  <td>
-                    {{.}}
-                    <div class="pull-right">
-                      <button class="pure-button button-error" onclick="delete_firmware('{{.}}');">Delete</button>
-                    </div>
-                  </td>
-                </tr>
-              {{/}}
-            </tbody>
-          </table>
-        {{/if}}
-
-        <h3>Upload Firmware File</h3>
-        <form action="/firmware/upload/" method="post" accept-charset="utf-8" enctype="multipart/form-data">
-          <input id="file" name="file" type="file" />
-          <input type="submit" value="Upload" class="pure-button"/>
-        </form>
+      {{#if firmware.allow_custom_firmware}} {{#if firmware.local_files}}
+      <br />
+      <table class="pure-table" width="100%">
+        <thead>
+          <tr>
+            <th>Local Firmware Files</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#firmware.local_files}}
+          <tr>
+            <td>
+              {{.}}
+              <div class="pull-right">
+                <button
+                  class="pure-button button-error"
+                  onclick="delete_firmware('{{.}}');"
+                >
+                  Delete
+                </button>
+              </div>
+            </td>
+          </tr>
+          {{/}}
+        </tbody>
+      </table>
       {{/if}}
 
+      <h3>Upload Firmware File</h3>
+      <form
+        action="/firmware/upload/"
+        method="post"
+        accept-charset="utf-8"
+        enctype="multipart/form-data"
+      >
+        <input id="file" name="file" type="file" />
+        <input type="submit" value="Upload" class="pure-button" />
+      </form>
+      {{/if}}
     </script>
 
     <script src="/static/lib/jquery-3.5.1.min.js"></script>

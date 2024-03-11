@@ -2,124 +2,124 @@
 .button-error,
 .button-warning,
 .button-secondary {
-    color: white;
-    border-radius: 4px;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  color: white;
+  border-radius: 4px;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
 .button-success {
-    background: rgb(28, 184, 65);
-    /* this is a green */
+  background: rgb(28, 184, 65);
+  /* this is a green */
 }
 
 .button-error {
-    background: rgb(202, 60, 60);
-    /* this is a maroon */
+  background: rgb(202, 60, 60);
+  /* this is a maroon */
 }
 
 .button-warning {
-    background: rgb(223, 117, 20);
-    /* this is an orange */
+  background: rgb(223, 117, 20);
+  /* this is an orange */
 }
 
 .button-secondary {
-    background: rgb(66, 184, 221);
-    /* this is a light blue */
+  background: rgb(66, 184, 221);
+  /* this is a light blue */
 }
 
 .pull-right {
-	float: right;
+  float: right;
 }
 
 #main-grid,
 #content {
-    min-height: 100%;
+  min-height: 100%;
 }
 
 #main-grid {
-    display: grid;
-    grid-template-columns: auto 1000px auto;
-    grid-template-rows: 2em 5em auto;
+  display: grid;
+  grid-template-columns: auto 1000px auto;
+  grid-template-rows: 2em 5em auto;
 }
 
 #banner {
-    grid-column-start: 1;
-    grid-column-end: 4;
-    grid-row-start: 1;
-    grid-row-end: 3;
+  grid-column-start: 1;
+  grid-column-end: 4;
+  grid-row-start: 1;
+  grid-row-end: 3;
 
-    content: " ";
-    background-color: lightgrey;
-    border-bottom: 1px solid #999;
+  content: " ";
+  background-color: lightgrey;
+  border-bottom: 1px solid #999;
 }
 
 #content {
-    grid-column-start: 2;
-    grid-column-end: 2;
-    grid-row-start: 2;
-    grid-row-end: 4;
+  grid-column-start: 2;
+  grid-column-end: 2;
+  grid-row-start: 2;
+  grid-row-end: 4;
 
-    padding: 1em 0.5em;
-    background-color: white;
-    box-shadow: 0 0.25em 0.5em #777;
-    border: 1px solid #999;
-    border-bottom: 0px;
-    border-radius: 4px 4px 0px 0px;
+  padding: 1em 0.5em;
+  background-color: white;
+  box-shadow: 0 0.25em 0.5em #777;
+  border: 1px solid #999;
+  border-bottom: 0px;
+  border-radius: 4px 4px 0px 0px;
 }
 
 #template {
-    padding: 0.5em 1em;
+  padding: 0.5em 1em;
 }
 
 #content h1:first-child {
-    margin-top: 0;
+  margin-top: 0;
 }
 
 #content h1 {
-    padding-left: 0.5em;
+  padding-left: 0.5em;
 }
 
 .pure-menu {
-    height: 2em;
+  height: 2em;
 }
 
 .pure-menu-link {
-    background-color: transparent !important;
-    padding-right: 0;
+  background-color: transparent !important;
+  padding-right: 0;
 }
 
 #node-table tbody tr td:first-child {
-    cursor: pointer;
+  cursor: pointer;
 }
 
 #node-table tbody tr {
-    color: black;
-    background-color: #d9ffcb;
+  color: black;
+  background-color: #d9ffcb;
 }
 
 #node-table tbody tr.locator_highlight {
-    color: white;
-    background-color: #5caa3e;
+  color: white;
+  background-color: #5caa3e;
 }
 
 #node-info-back {
-    font-weight: bold;
-    cursor: pointer;
+  font-weight: bold;
+  cursor: pointer;
 }
 
 #node-info {
-    margin-top: 0.75em;
+  margin-top: 0.75em;
 }
 
 #node-info tr {
-    text-align: left;
+  text-align: left;
 }
 
 #outputs button {
-    margin-right: 0.5em;
+  margin-right: 0.5em;
 }
 
 #server-info {
-    padding-left: 16px;
-    margin-bottom: 2em;
+  padding-left: 16px;
+  margin-bottom: 2em;
 }
