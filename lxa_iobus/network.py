@@ -90,6 +90,10 @@ class LxaNetwork:
 
             await asyncio.sleep(1)
 
+    async def await_running(self):
+        while not self._running:
+            await asyncio.sleep(0.1)
+
     async def update_interface_state(self):
         while self._running:
             self._interface_state = self.interface_is_up()
@@ -528,7 +532,7 @@ class LxaNetwork:
     def shutdown(self):
         self._running = False
 
-    async def run(self):
+    async def run(self, with_lss=True):
         # The janus Queue can only be set up while we are inside the running
         # asyncio event loop, so we have to do it here instead of in __init__.
         # Make sure to set up before signal being _running = True.
@@ -548,19 +552,60 @@ class LxaNetwork:
                 bitrate=self.bitrate,
             )
 
-            await asyncio.gather(
+            tasks = [
                 self.update_interface_state(),
-                self.lss_fast_scan(),
-                self.lss_ping(),
                 self.loop.run_in_executor(None, self.send),
                 self.loop.run_in_executor(None, self.recv),
-            )
+            ]
+
+            if with_lss:
+                tasks.append(self.lss_fast_scan())
+                tasks.append(self.lss_ping())
+
+            await asyncio.gather(*tasks)
 
             self.nodes = dict()
             self._outgoing_queue = Queue()
             self._pending_lss_request = None
 
             self.bus.shutdown()
+
+    async def setup_single_node(self):
+        """Set up a bus that is known to only contain a single node skipping lss scanning
+
+        This will behave strangely if more than one node is connected to the bus,
+        because all nodes will be given the same node id.
+
+        Returns the LxaBusNode object of the new node.
+        """
+
+        self.nodes = dict()
+
+        # Set all connected nodes to the configuration state
+        await self.lss_request(gen_lss_switch_mode_global_message(LssMode.CONFIGURATION))
+
+        # Give all connected nodes the node id 1.
+        # This will obviously wreck havoc when multiple nodes are connected
+        # and all respond to the same node id from now on.
+        await self.lss_request(gen_lss_configure_node_id_message(1))
+
+        # Set all connected nodes to the operation state,
+        # completing the setup.
+        await self.lss_request(gen_lss_switch_mode_global_message(LssMode.OPERATION))
+
+        # Just assume that we have a node with id 1 now.
+        # The lss_address is a bogus address, because we never discovered the nodes address.
+        # This means the node will show up as Unknown type and with default input/output
+        # names, even if it is an IOBus device.
+        self.nodes[1] = LxaNode(
+            lxa_network=self,
+            lss_address=[0, 0, 0, 0],
+            node_id=1,
+        )
+
+        await self.nodes[1].setup_object_directory()
+
+        return self.nodes[1]
 
     def get_node_by_name(self, name):
         for _, node in self.nodes.copy().items():
