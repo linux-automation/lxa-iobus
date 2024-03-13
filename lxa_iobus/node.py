@@ -1,8 +1,8 @@
 import asyncio
 import concurrent
 import contextlib
+import json
 import logging
-import os
 import struct
 
 from lxa_iobus.canopen import (
@@ -14,22 +14,13 @@ from lxa_iobus.canopen import (
     gen_sdo_segment_download,
     gen_sdo_segment_upload,
 )
-from lxa_iobus.lpc11xxcanisp.firmware.versions import FIRMWARE_VERSIONS
-from lxa_iobus.node_drivers import drivers
-from lxa_iobus.node_input import ADC, Input, Output
-from lxa_iobus.utils import array2int
+
+from .object_directory import ObjectDirectory
+from .products import find_product
 
 DEFAULT_TIMEOUT = 1
 
 logger = logging.getLogger("lxa_iobus.node")
-
-VENDOR_VERSION_FIELDS = (
-    (0x2001, 0, "protocol_version", int),
-    (0x2001, 1, "board_version", int),
-    (0x2001, 2, "serial_string", str),
-    (0x2001, 3, "vendor_name", str),
-    (0x2001, 5, "notes", str),
-)
 
 
 class LxaNode:
@@ -42,26 +33,20 @@ class LxaNode:
         self._lock = asyncio.Lock()
 
         self.address = ".".join(["{:08x}".format(i) for i in self.lss_address])
+        self.product = find_product(lss_address)
+        self.name = self.product.name()
 
-        self.inputs = []
-        self.outputs = []
-        self.adcs = []
         self.locator_state = False
 
-        for driver_class in drivers:
-            name = driver_class.match(self)
-
-            if name:
-                self.name = name
-                self.driver = driver_class(self)
-
-                break
-
     def __repr__(self):
-        return "<LxaNode(address={}, node_id={}, driver={})>".format(
-            self.address,
-            self.node_id,
-            repr(self.driver),
+        return f"<LxaBusNode(address={self.address}, node_id={self.node_id})>"
+
+    async def setup_object_directory(self):
+        self.od = await ObjectDirectory.scan(
+            self,
+            self.product.ADC_NAMES,
+            self.product.INPUT_NAMES,
+            self.product.OUTPUT_NAMES,
         )
 
     def set_sdo_response(self, message):
@@ -313,119 +298,69 @@ class LxaNode:
             # Maybe the complete flag is not correctly set
             raise Exception("Something went wrong with segmented download")
 
-    # public API ##############################################################
-    async def ping(self, timeout=DEFAULT_TIMEOUT):
+    async def ping(self):
         try:
-            raw_state = await self.sdo_read(
-                index=0x210C,
-                sub_index=1,
-                timeout=timeout,
-            )
-
-            self.locator_state = array2int(raw_state) != 0
+            if "locator" in self.od:
+                self.locator_state = await self.od.locator.active()
+            else:
+                # The device does not advertise having an IOBus locator.
+                # Try a CANopen standard endpoint instead
+                await self.od.manufacturer_device_name.name()
 
             return True
 
         except TimeoutError:
             return False
 
-    async def get_info(self):
-        if hasattr(self, "_info") and self._info is not None:
-            return self._info
-
-        # node info ###########################################################
-        device_name = await self.sdo_read(0x1008, 0)
-        hardware_version = await self.sdo_read(0x1009, 0)
-        software_version = await self.sdo_read(0x100A, 0)
+    async def info(self):
+        device_name = await self.od.manufacturer_device_name.name()
+        hardware_version = await self.od.manufacturer_hardware_version.version()
+        software_version = await self.od.manufacturer_software_version.version()
 
         # check for updates
         update_name = ""
 
-        firmware = FIRMWARE_VERSIONS.get(self.driver.__class__)
-        if firmware:
-            raw_version = software_version.decode().split(" ")[1]
+        bundled_firmware_version = self.product.FIRMWARE_VERSION
+        bundled_firmware_file = self.product.FIRMWARE_FILE
+
+        if (bundled_firmware_version is not None) and (bundled_firmware_file is not None):
+            raw_version = software_version.split(" ")[1]
             version_tuple = tuple([int(i) for i in raw_version.split(".")])
 
-            if version_tuple < firmware[0]:
-                update_name = os.path.basename(firmware[1])
-                logger.info("Found firmware update for {} to {}".format(self, ".".join(str(x) for x in firmware[0])))
+            if version_tuple < bundled_firmware_version:
+                update_name = bundled_firmware_file
 
-        self._info = {
-            "device_name": device_name.decode(),
-            "address": str(self.address),
-            "hardware_version": hardware_version.decode(),
-            "software_version": software_version.decode(),
+        info = {
+            "device_name": device_name,
+            "address": self.address,
+            "hardware_version": hardware_version,
+            "software_version": software_version,
             "update_name": update_name,
         }
 
-        # pin info ############################################################
-        protocol_count = await self.sdo_read(0x2000, 0)
-        protocol_count = array2int(protocol_count)
-        protocols = []
+        if "version_info" in self.od:
+            info["protocol_version"] = await self.od.version_info.protocol()
+            info["board_version"] = await self.od.version_info.board()
+            info["serial_string"] = await self.od.version_info.serial()
+            info["vendor_name"] = await self.od.version_info.vendor_name()
+            info["notes"] = await self.od.version_info.notes()
 
-        for i in range(protocol_count):
-            tmp = await self.sdo_read(0x2000, i + 1)
-            tmp = array2int(tmp)
-            protocols.append(tmp)
+            # If the json is not valid we just leave it as string instead
+            with contextlib.suppress(json.decoder.JSONDecodeError):
+                info["notes"] = json.loads(info["notes"])
 
-        # Vendor-Specific version information
-        if 0x2001 in protocols:
-            for sdo, sub_idx, field_name, field_type in VENDOR_VERSION_FIELDS:
-                # Do not fail when one of the reads to these
-                # vendor-specific fields fails.
-                try:
-                    value = await self.sdo_read(sdo, sub_idx)
-                except SdoAbort:
-                    continue
-
-                if field_type is int:
-                    value = array2int(value)
-                elif field_type is str:
-                    value = value.decode()
-
-                self._info[field_name] = value
-
-        # Inputs
-        if 0x2101 in protocols:
-            channel_count = await self.sdo_read(0x2101, 0)
-
-            channel_count = array2int(channel_count) // 2
-
-            for i in range(channel_count):
-                channel = Input(self.address, i, self)
-                await channel.get_pin_count()
-
-                self.inputs.append(channel)
-
-        # Output
-        if 0x2100 in protocols:
-            channel_count = await self.sdo_read(0x2100, 0)
-            channel_count = array2int(channel_count) // 2
-
-            for i in range(channel_count):
-                channel = Output(self.address, i, self)
-                await channel.get_pin_count()
-
-                self.outputs.append(channel)
-
-        # ADCs
-        if 0x2ADC in protocols:
-            channel_count = await self.sdo_read(0x2ADC, 0)
-            channel_count = array2int(channel_count)
-
-            for i in range(channel_count):
-                channel = ADC(self.address, i, self)
-                await channel.get_config()
-                self.adcs.append(channel)
-
-        return self._info
+        return info
 
     async def set_locator_state(self, state):
-        cmd = b"\x01\x00\x00\x00" if state else b"\x00\x00\x00\x00"
+        if state:
+            await self.od.locator.enable()
+        else:
+            await self.od.locator.disable()
 
-        await self.sdo_write(0x210C, 1, cmd)
         self.locator_state = state
 
     async def invoke_isp(self):
+        # The node will enter the bootloader immediately,
+        # so we will not receive a response and waiting for it will timeout.
         with contextlib.suppress(TimeoutError):
-            await self.sdo_write(0x2B07, 0, struct.pack("I", 0x12345678))
+            await self.od.bootloader.enter()

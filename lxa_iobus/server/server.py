@@ -11,10 +11,7 @@ from aiohttp.web import FileResponse, HTTPFound, Response, json_response
 from aiohttp_json_rpc import JsonRpc
 
 from lxa_iobus.lpc11xxcanisp.can_isp import CanIsp
-from lxa_iobus.lpc11xxcanisp.firmware.versions import (
-    FIRMWARE_DIR,
-    FIRMWARE_VERSIONS,
-)
+from lxa_iobus.lpc11xxcanisp.firmware import FIRMWARE_DIR
 
 STATIC_ROOT = os.path.join(os.path.dirname(__file__), "static")
 logger = logging.getLogger("LXAIOBusServer")
@@ -195,10 +192,14 @@ class LXAIOBusServer:
         try:
             node_name = request.match_info["node"]
             node = self.network.get_node_by_name(node_name)
+
+            driver = node.product.__class__.__name__ + "Driver"
+            info = await node.info()
+
             response["result"] = {
                 "locator": node.locator_state,
-                "driver": node.driver.__class__.__name__,
-                "info": await node.get_info(),
+                "driver": driver,
+                "info": info,
             }
 
         except ValueError as e:
@@ -235,8 +236,14 @@ class LXAIOBusServer:
             node_name = request.match_info["node"]
             node = self.network.get_node_by_name(node_name)
 
-            for name, _ in node.driver.pins.items():
-                response["result"].append(name)
+            if "outputs" in node.od:
+                response["result"].extend(node.od.outputs.pins)
+
+            if "inputs" in node.od:
+                response["result"].extend(node.od.inputs.pins)
+
+            if "adc" in node.od:
+                response["result"].extend(node.od.adc.channel_names)
 
         except ValueError as e:
             logger.info(
@@ -271,7 +278,18 @@ class LXAIOBusServer:
             pin_name = request.match_info["pin"]
             node = self.network.get_node_by_name(node_name)
 
-            response["result"] = await node.driver.pins[pin_name].read()
+            if "outputs" in node.od and pin_name in node.od.outputs.pins:
+                response["result"] = int(await node.od.outputs.get(pin_name))
+
+            elif "inputs" in node.od and pin_name in node.od.inputs.pins:
+                response["result"] = int(await node.od.inputs.get(pin_name))
+
+            elif "adc" in node.od and pin_name in node.od.adc.channel_names:
+                response["result"] = await node.od.adc.read(pin_name)
+
+            else:
+                raise KeyError()
+
             logger.info(
                 "get_pin: read pin %s on node %s: %s",
                 pin_name,
@@ -330,17 +348,26 @@ class LXAIOBusServer:
                 "adcs": {},
             }
 
-            for pin_name, pin in node.driver.pins.items():
-                value = await pin.read()
+            if "inputs" in node.od:
+                inputs = await node.od.inputs.get_all()
 
-                if pin.pin_type == "input":
-                    pin_info["inputs"][pin_name] = value
+                # The API exposes the output state as integers, not booleans.
+                # Convert between the types.
+                pin_info["inputs"] = dict((name, int(value)) for name, value in inputs.items())
 
-                elif pin.pin_type == "output":
-                    pin_info["outputs"][pin_name] = value
+            if "outputs" in node.od:
+                outputs = await node.od.outputs.get_all()
 
-                elif pin.pin_type == "adc":
-                    pin_info["adcs"][pin_name] = "{:.3f}".format(value)
+                # The API exposes the output state as integers, not booleans.
+                # Convert between the types.
+                pin_info["outputs"] = dict((name, int(value)) for name, value in outputs.items())
+
+            if "adc" in node.od:
+                adcs = await node.od.adc.read_all()
+
+                # The API exposes the ADC values as strings for historic reasons.
+                # This should be changed in a v2 API.
+                pin_info["adcs"] = dict((name, f"{value:.4}") for name, value in adcs.items())
 
             response["result"] = pin_info
 
@@ -396,16 +423,16 @@ class LXAIOBusServer:
             value = post["value"]
 
             node = self.network.get_node_by_name(node_name)
-            pin = node.driver.pins[pin_name]
 
             if value == "toggle":
-                value = await pin.read()
-                value = 1 - value
+                await node.od.outputs.toggle(pin_name)
+
+            elif value:
+                await node.od.outputs.set_high(pin_name)
 
             else:
-                value = int(value)
+                await node.od.outputs.set_low(pin_name)
 
-            response["result"] = await pin.write(value)
             logger.info(
                 "set_pin: set pin %s on node %s to %s",
                 pin_name,
@@ -491,11 +518,11 @@ class LXAIOBusServer:
 
     # firmware views ##########################################################
     async def get_firmware_files(self, request):
-        upstream_files = []
-        local_files = []
+        upstream_files = list(
+            name for name in os.listdir(FIRMWARE_DIR) if not name.startswith(".") and name.endswith(".bin")
+        )
 
-        for _, (_, path) in FIRMWARE_VERSIONS.items():
-            upstream_files.append(os.path.basename(path))
+        local_files = []
 
         if self.allow_custom_firmware:
             for i in os.listdir(self.firmware_directory):
@@ -646,7 +673,8 @@ class LXAIOBusServer:
             node_name = request.match_info["node"]
             node = self.network.get_node_by_name(node_name)
 
-            file_name = FIRMWARE_VERSIONS[node.driver.__class__][1]
+            file_name = node.product.FIRMWARE_FILE
+            file_name = os.path.join(FIRMWARE_DIR, file_name)
 
             await self.flash_jobs.put(
                 (
@@ -675,22 +703,23 @@ class LXAIOBusServer:
 
         for node_id in node_ids:
             node = nodes[node_id]
-            node_driver = node.driver
 
             # get node info
             try:
-                node_info = await node.get_info()
+                node_info = await node.info()
 
             except Exception as e:
-                logger.warning("Exception during get_info() for node {}: {}".format(node, repr(e)))
+                logger.warning("Exception during node.info() for node {}: {}".format(node, repr(e)))
                 node_info = {}
+
+            driver = node.product.__class__.__name__ + "Driver"
 
             state.append(
                 [
                     node.name,
                     {
                         "locator": node.locator_state,
-                        "driver": node_driver.__class__.__name__,
+                        "driver": driver,
                         "info": node_info,
                     },
                 ]
