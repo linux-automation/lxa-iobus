@@ -7,7 +7,7 @@ from datetime import datetime
 from functools import partial
 from pprint import pformat
 
-from aiohttp.web import FileResponse, HTTPFound, Response, json_response
+from aiohttp.web import FileResponse, HTTPBadRequest, HTTPForbidden, HTTPFound, HTTPNotFound, Response, json_response
 from aiohttp_json_rpc import JsonRpc
 
 from lxa_iobus.lpc11xxcanisp.can_isp import CanIsp
@@ -58,6 +58,9 @@ class LXAIOBusServer:
 
         app.router.add_route("GET", "/nodes/", self.get_nodes)
         app.router.add_route("GET", "/nodes/{node}/", self.get_node)
+
+        app.router.add_route("GET", "/api/v2/node/{node}/raw_sdo/{index}/{sub_index}", self.get_sdo_raw)
+        app.router.add_route("POST", "/api/v2/node/{node}/raw_sdo/{index}/{sub_index}", self.send_sdo_raw)
 
         # firmware urls
         app.router.add_route(
@@ -474,6 +477,71 @@ class LXAIOBusServer:
             }
 
         return Response(text=json.dumps(response))
+
+    async def get_sdo_raw(self, request):
+        node_name = request.match_info["node"]
+        index = request.match_info["index"]
+        sub_index = request.match_info["sub_index"]
+
+        try:
+            # Allow users to specify the sdo indices as hex (with 0x prefix)
+            # or as decimal.
+            index = int(index, base=0)
+            sub_index = int(sub_index, base=0)
+        except ValueError as e:
+            raise HTTPBadRequest(body="Malformed index/sub index") from e
+
+        if index < 0x1000 or index >= 0x3000:
+            raise HTTPForbidden(body="Raw SDO access for non-standard, non-vendor indices is not allowed")
+
+        if sub_index < 0 or sub_index > 255:
+            raise HTTPBadRequest(body="SDO sub index outside of valid range")
+
+        try:
+            node = self.network.get_node_by_name(node_name)
+        except ValueError as e:
+            raise HTTPNotFound(body="Node ID not found") from e
+
+        # This can throw a whole suite of exceptions, that should likely
+        # be handled and mapped to HTTP status codes.
+        result = await node.sdo_read(index, sub_index)
+
+        # Respond with the raw byte stream
+        return Response(body=result)
+
+    async def send_sdo_raw(self, request):
+        node_name = request.match_info["node"]
+        index = request.match_info["index"]
+        sub_index = request.match_info["sub_index"]
+
+        try:
+            # Allow users to specify the sdo indices as hex (with 0x prefix)
+            # or as decimal.
+            index = int(index, base=0)
+            sub_index = int(sub_index, base=0)
+        except ValueError as e:
+            raise HTTPBadRequest(body="Malformed index/sub index") from e
+
+        if index < 0x1000 or index >= 0x3000:
+            raise HTTPForbidden(body="Raw SDO access for non-standard, non-vendor indices is not allowed")
+
+        if sub_index < 0 or sub_index > 255:
+            raise HTTPBadRequest(body="SDO sub index outside of valid range")
+
+        try:
+            node = self.network.get_node_by_name(node_name)
+        except ValueError as e:
+            raise HTTPNotFound(body="Node ID not found") from e
+
+        # Get the body as raw bytes
+        data = await request.read()
+
+        # This can throw a whole suite of exceptions, that should likely
+        # be handled and mapped to HTTP status codes.
+        await node.sdo_write(index, sub_index, data)
+
+        # No Content
+        return Response(status=204)
 
     async def toggle_locator(self, request):
         response = {
