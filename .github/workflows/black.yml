@@ -18,3 +18,15 @@ jobs:
         uses: cytopia/docker-black@0.8
         with:
           path: '.'
+      - name: Python Black
+        uses: cytopia/docker-black@0.8
+        with:
+          path: 'bin/lxa-iobus-lpc11xxcanisp-invoke'
+      - name: Python Black
+        uses: cytopia/docker-black@0.8
+        with:
+          path: 'bin/lxa-iobus-lpc11xxcanisp-program'
+      - name: Python Black
+        uses: cytopia/docker-black@0.8
+        with:
+          path: 'bin/lxa-iobus-server'
