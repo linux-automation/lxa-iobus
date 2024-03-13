@@ -58,6 +58,10 @@ class LxaNetwork:
             node_id=125,
         )
 
+        self.nodes = dict()
+
+        self._interface_state = False
+        self._pending_lss_request = None
         self._running = False
 
     # interface checker code ##################################################
@@ -517,13 +521,14 @@ class LxaNetwork:
         self._running = False
 
     async def run(self):
+        # The janus Queue can only be set up while we are inside the running
+        # asyncio event loop, so we have to do it here instead of in __init__.
+        # Make sure to set up before signal being _running = True.
+        self._outgoing_queue = Queue()
+
         self._running = True
 
         while self._running:
-            self.nodes = {}
-            self._outgoing_queue = Queue()
-            self._pending_lss_request = None
-
             await self.await_interface_is_up()
 
             if not self._running:
@@ -542,6 +547,10 @@ class LxaNetwork:
                 self.loop.run_in_executor(None, self.send),
                 self.loop.run_in_executor(None, self.recv),
             )
+
+            self.nodes = dict()
+            self._outgoing_queue = Queue()
+            self._pending_lss_request = None
 
             self.bus.shutdown()
 
