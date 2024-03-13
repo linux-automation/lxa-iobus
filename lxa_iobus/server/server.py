@@ -173,10 +173,7 @@ class LXAIOBusServer:
     async def get_nodes(self, request):
         nodes = []
 
-        for node_id, node in self.network.nodes.copy().items():
-            if node_id == 125:  # ISP
-                continue
-
+        for _, node in self.network.nodes.copy().items():
             nodes.append(node.name)
 
         response = {
@@ -677,9 +674,6 @@ class LXAIOBusServer:
         node_ids = sorted(nodes.keys())
 
         for node_id in node_ids:
-            if node_id == 125:  # ISP
-                continue
-
             node = nodes[node_id]
             node_driver = node.driver
 

@@ -177,7 +177,7 @@ class CanIsp:
     def _send(self, index: int, subindex: int, size, num: int):
         """Sends data to the MCU and converts it"""
 
-        isp_node = self.network.get_isp_node()
+        isp_node = self.network.isp_node
 
         coroutine = isp_node.sdo_write(
             index,
@@ -198,7 +198,7 @@ class CanIsp:
     def _get(self, index: int, subindex: int, size):
         """Gets data from the MCU and converts it"""
 
-        isp_node = self.network.get_isp_node()
+        isp_node = self.network.isp_node
         coroutine = isp_node.sdo_read(index, subindex)
 
         future = asyncio.run_coroutine_threadsafe(
