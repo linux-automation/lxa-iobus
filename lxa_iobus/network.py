@@ -482,6 +482,8 @@ class LxaNetwork:
                 if not response:
                     logger.debug("fast_scan: failed to make node operational")
 
+                await self.nodes[node_id].setup_object_directory()
+
         except LxaShutdown:
             logger.debug("fast_scan: shutdown")
 
