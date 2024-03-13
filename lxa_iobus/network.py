@@ -228,15 +228,8 @@ class LxaNetwork:
                     sdo_message = parse_sdo_message(message)
                     node_id = sdo_message.node_id
 
-                    try:
-                        if node_id in self.nodes:
-                            self.nodes[node_id].set_sdo_response(sdo_message)
-
-                    except KeyError:
-                        # this fails when the node disappears during a running
-                        # sdo request
-
-                        pass
+                    if node_id in self.nodes:
+                        self.nodes[node_id].set_sdo_response(sdo_message)
 
             except Exception as e:
                 logger.exception("rx: crashed with unhandled error %s", e)
