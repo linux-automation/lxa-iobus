@@ -61,6 +61,7 @@ class LxaNetwork:
 
         self._interface_state = False
         self._pending_lss_request = None
+        self._node_in_setup = None
         self._running = False
 
     # interface checker code ##################################################
@@ -230,6 +231,9 @@ class LxaNetwork:
 
                     elif node_id in self.nodes:
                         self.nodes[node_id].set_sdo_response(sdo_message)
+
+                    elif self._node_in_setup is not None:
+                        self._node_in_setup.set_sdo_response(sdo_message)
 
             except Exception as e:
                 logger.exception("rx: crashed with unhandled error %s", e)
@@ -469,20 +473,32 @@ class LxaNetwork:
                 if not response:
                     logger.error("fast_scan: failed to set node ID")
 
-                self.nodes[node_id] = LxaNode(
-                    lxa_network=self,
-                    lss_address=lss,
-                    node_id=node_id,
-                )
-
-                logger.info("fast_scan: Created new node with id {} for {}".format(node_id, lss))
-
                 response = await self.lss_request(gen_lss_switch_mode_global_message(LssMode.OPERATION))
 
                 if not response:
                     logger.debug("fast_scan: failed to make node operational")
 
-                await self.nodes[node_id].setup_object_directory()
+                # We need to receive SDO responses while the node is being set
+                # up but do not want it to be in the node list yet,
+                # so we store a reference in self._node_in_setup that can be used
+                # in self.recv().
+                # Otherwise the node would show up as half initialized in the list
+                # of nodes for a moment.
+                self._node_in_setup = LxaNode(
+                    lxa_network=self,
+                    lss_address=lss,
+                    node_id=node_id,
+                )
+
+                # Fetch the list of available objects from the node.
+                await self._node_in_setup.setup_object_directory()
+
+                # Now that the node is fully set up we can add it to the
+                # actual node list and remove the temporary reference.
+                self.nodes[node_id] = self._node_in_setup
+                self._node_in_setup = None
+
+                logger.info("fast_scan: Created new node with id {} for {}".format(node_id, lss))
 
         except LxaShutdown:
             logger.debug("fast_scan: shutdown")
