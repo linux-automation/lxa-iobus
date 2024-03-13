@@ -44,7 +44,7 @@ class LxaNetwork:
         self.loop = loop
         self.interface = interface
         self.bustype = bustype
-        self.bitrate = bitrate  # muss so: festgelegt durch lpc11c24 bootloader
+        self.bitrate = bitrate
 
         self.lss_address_cache_file = lss_address_cache_file
         self.lss_address_cache = []
