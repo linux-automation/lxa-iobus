@@ -19,9 +19,9 @@ would need an `async def __init__(self)`, which does not exist yet.
 Instead the provide an `async def new()` classmethod that should be used
 instead of `__init__()`.
 
-To use just the ADC feature on an LxaNode:
+To use just the ADC feature on an LxaRemoteNode:
 
-    node = LxaNode(...)
+    node = await LxaRemoteNode.new("http://localhost:8080", "<node name>")
     adc = await Adc.new(node)
 
     print("number of ADC channels:", await adc.channel_count())
@@ -29,9 +29,9 @@ To use just the ADC feature on an LxaNode:
     for name, value in await adc.read_all():
         print(f"Channel {name}: {value}")
 
-To automatically enumerate all features of an LxaNode:
+To automatically enumerate all features of an LxaRemoteNode:
 
-    node = LxaNode(...)
+    node = await LxaRemoteNode.new("http://localhost:8080", "<node name>")
     od = await ObjectDirectory.scan(node)
     adc = od.adc
 
@@ -39,6 +39,9 @@ To automatically enumerate all features of an LxaNode:
 
     for name, value in await adc.read_all():
         print(f"Channel {name}: {value}")
+
+The LxaRemoteNode and LxaBusNode classes also provide a pre-initialized
+ObjectDirectory instance via `node.od`.
 """
 
 
@@ -271,7 +274,7 @@ class ProcessDataObject(object):
         >>>        self.add_sub("example_value", SubIndex.u32(0))
         >>>        self.add_sub_array("example_array", [SubIndex.u32(1), SubIndex.u32(2)])
         >>>
-        >>> node = LxaNode(...)
+        >>> node = await LxaRemoteNode.new("http://localhost:8080", "<node name>")
         >>> ex = ExampleFeature(node)
         >>> await ex.set_example_value(1)
         >>> await ex.example_value()

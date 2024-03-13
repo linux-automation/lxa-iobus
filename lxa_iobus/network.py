@@ -21,7 +21,7 @@ from lxa_iobus.canopen import (
     gen_lss_switch_mode_global_message,
     parse_sdo_message,
 )
-from lxa_iobus.node import LxaNode
+from lxa_iobus.node.bus_node import LxaBusNode
 
 logger = logging.getLogger("lxa-iobus.network")
 
@@ -51,7 +51,7 @@ class LxaNetwork:
 
         self.tx_error = False
 
-        self.isp_node = LxaNode(
+        self.isp_node = LxaBusNode(
             lxa_network=self,
             lss_address=[0, 0, 0, 0],
             node_id=125,
@@ -491,7 +491,7 @@ class LxaNetwork:
                 # in self.recv().
                 # Otherwise the node would show up as half initialized in the list
                 # of nodes for a moment.
-                self._node_in_setup = LxaNode(
+                self._node_in_setup = LxaBusNode(
                     lxa_network=self,
                     lss_address=lss,
                     node_id=node_id,
@@ -597,7 +597,7 @@ class LxaNetwork:
         # The lss_address is a bogus address, because we never discovered the nodes address.
         # This means the node will show up as Unknown type and with default input/output
         # names, even if it is an IOBus device.
-        self.nodes[1] = LxaNode(
+        self.nodes[1] = LxaBusNode(
             lxa_network=self,
             lss_address=[0, 0, 0, 0],
             node_id=1,
