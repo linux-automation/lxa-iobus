@@ -30,6 +30,7 @@ packages = [
   "lxa_iobus.lpc11xxcanisp",
   "lxa_iobus.lpc11xxcanisp.firmware",
   "lxa_iobus.lpc11xxcanisp.loader",
+  "lxa_iobus.node",
   "lxa_iobus.server",
 ]
 include-package-data = true
