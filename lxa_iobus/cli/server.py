@@ -118,7 +118,7 @@ def main():
     app["network"] = network
 
     async def shutdown_network(app):
-        await app["network"].shutdown()
+        app["network"].shutdown()
 
     app.on_shutdown.append(shutdown_network)
     loop.create_task(network.run())

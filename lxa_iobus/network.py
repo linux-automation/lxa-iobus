@@ -516,7 +516,7 @@ class LxaNetwork:
         await self._outgoing_queue.async_q.put(message)
 
     # public api ##############################################################
-    async def shutdown(self):
+    def shutdown(self):
         self._running = False
 
     async def run(self):
