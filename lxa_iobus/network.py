@@ -484,8 +484,6 @@ class LxaNetwork:
 
                 logger.info("fast_scan: Created new node with id {} for {}".format(node_id, lss))
 
-                self._sdo_queues[node_id] = Queue()
-
                 response = await self.lss_request(gen_lss_switch_mode_global_message(LssMode.OPERATION))
 
                 if not response:
@@ -533,7 +531,6 @@ class LxaNetwork:
 
             self._outgoing_queue = Queue()
             self._pending_lss_request = None
-            self._sdo_queues = {}
 
             await self.await_interface_is_up()
 
