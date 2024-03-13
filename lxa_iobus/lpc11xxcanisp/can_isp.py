@@ -1,10 +1,8 @@
-import asyncio
 import logging
 import os
 import struct
 import time
 from datetime import datetime
-from functools import partial
 
 from lxa_iobus.lpc11xxcanisp import loader
 
@@ -137,7 +135,7 @@ class CanIsp:
 
         self._console = []
 
-    def console_log(self, *message):
+    async def console_log(self, *message):
         console_max_len = 100
 
         message = "{}: {}".format(str(datetime.now()), " ".join([str(i) for i in message]))
@@ -147,10 +145,7 @@ class CanIsp:
         if len(self._console) > console_max_len:
             self._console = self._console[len(self._console) - console_max_len :]
 
-        self.server.rpc.worker_pool.run_sync(
-            partial(self.server.rpc.notify, "isp_console", self._console),
-            wait=False,
-        )
+        await self.server.rpc.notify("isp_console", self._console)
 
     @staticmethod
     def unpack(data: bytes, size: int = None):
@@ -174,63 +169,46 @@ class CanIsp:
 
         return struct.pack(form, data)
 
-    def _send(self, index: int, subindex: int, size, num: int):
+    async def _send(self, index: int, subindex: int, size, num: int):
         """Sends data to the MCU and converts it"""
 
-        isp_node = self.network.isp_node
-
-        coroutine = isp_node.sdo_write(
+        await self.node.sdo_write(
             index,
             subindex,
             self.pack(num, size=size),
         )
 
-        future = asyncio.run_coroutine_threadsafe(
-            coroutine,
-            loop=self.network.loop,
-        )
+    async def send(self, name, value):
+        await self._send(*self.object_directory[name], value)
 
-        return future.result()
-
-    def send(self, name, value):
-        self._send(*self.object_directory[name], value)
-
-    def _get(self, index: int, subindex: int, size):
+    async def _get(self, index: int, subindex: int, size):
         """Gets data from the MCU and converts it"""
 
         isp_node = self.network.isp_node
-        coroutine = isp_node.sdo_read(index, subindex)
+        payload = await isp_node.sdo_read(index, subindex)
+        return self.unpack(payload, size)
 
-        future = asyncio.run_coroutine_threadsafe(
-            coroutine,
-            loop=self.network.loop,
-        )
+    async def get(self, name):
+        return await self._get(*self.object_directory[name])
 
-        result = future.result()
-
-        return self.unpack(result)
-
-    def get(self, name):
-        return self._get(*self.object_directory[name])
-
-    def unlock(self):
+    async def unlock(self):
         """
         Unlocks write operations
         Needs to be called before writing to RAM or Flash
         """
 
-        self.send("Unlock Code", 23130)
+        await self.send("Unlock Code", 23130)
 
-    def write_to_ram(self, addr: int, data: bytes):
+    async def write_to_ram(self, addr: int, data: bytes):
         """Writes data to RAM at addr"""
 
         # TODO: Check if we override the bootloader area
         # TODO: Check RAM Size
 
-        self.send("RAM Write Address", addr)
-        self.send("Program Area", data)
+        await self.send("RAM Write Address", addr)
+        await self.send("Program Area", data)
 
-    def prepare_flash_sectors(self, start: int, stop: int):
+    async def prepare_flash_sectors(self, start: int, stop: int):
         """
         Prepare sectors for write operation.
         Sectors are always 4kByte so sector 0 is address
@@ -245,25 +223,25 @@ class CanIsp:
         if start > 8 or stop > 8:
             raise ExceptionCanIsp("Sector out of range")
 
-        self.send("Prepare Sectors for Write", ((start & 0xFF) | ((stop & 0xFF) << 8)))
+        await self.send("Prepare Sectors for Write", ((start & 0xFF) | ((stop & 0xFF) << 8)))
 
-    def copy_ram_to_flash(self, ram_addr, flash_addr, length):
+    async def copy_ram_to_flash(self, ram_addr, flash_addr, length):
         """Copies RAM range to flash"""
 
         # TODO: Check for alignment
         # TODO: Check FLASH size
 
-        self.send("Copy Flash Address", flash_addr)
-        self.send("Copy RAM Address", ram_addr)
-        self.send("Copy Length", length)
+        await self.send("Copy Flash Address", flash_addr)
+        await self.send("Copy RAM Address", ram_addr)
+        await self.send("Copy Length", length)
 
-    def go(self, addr):
+    async def go(self, addr):
         """Jumps to given address"""
 
-        self.send("Execution Address", addr)
-        self.send("Program Control", 1)  # Trigger jump
+        await self.send("Execution Address", addr)
+        await self.send("Program Control", 1)  # Trigger jump
 
-    def erase_flash_sectors(self, start, stop):
+    async def erase_flash_sectors(self, start, stop):
         """Clear given flash range"""
 
         if stop < start:
@@ -272,70 +250,70 @@ class CanIsp:
         if start > 8 or stop > 8:
             raise ExceptionCanIsp("Sector out of range")
 
-        self.send("Erase Sectors", ((start & 0xFF) | ((stop & 0xFF) << 8)))
+        await self.send("Erase Sectors", ((start & 0xFF) | ((stop & 0xFF) << 8)))
 
-    def read_memory(self, addr: int, length: int) -> bytes:
+    async def read_memory(self, addr: int, length: int) -> bytes:
         """Dumps part of the MCUs memory"""
 
-        self.send("Memory Read Address", addr)
-        self.send("Memory Read Length", length)
+        await self.send("Memory Read Address", addr)
+        await self.send("Memory Read Length", length)
 
-        return self.get("Program Area")
+        return await self.get("Program Area")
 
-    def read_part_id(self) -> int:
+    async def read_part_id(self) -> int:
         """
         Returns a tuple with the part id and the part name if known
         otherwise None
         """
 
-        part_id = self.get("Part Identification Number")
+        part_id = await self.get("Part Identification Number")
         part_name = self.part_ids.get(part_id, None)
 
         return (part_id, part_name)
 
-    def read_bootloader_version(self) -> int:
+    async def read_bootloader_version(self) -> int:
         """Returns bootloader version as an 32-bit unsigned integers"""
 
-        return self.get("Boot Code Version Number")
+        return await self.get("Boot Code Version Number")
 
-    def read_serial_number(self) -> [int]:
+    async def read_serial_number(self) -> [int]:
         """
         returns MCU serial number as an array with 4 32-bit
         unsigned integers
         """
 
         return [
-            self.get("Serial Number 1"),
-            self.get("Serial Number 2"),
-            self.get("Serial Number 3"),
-            self.get("Serial Number 4"),
+            await self.get("Serial Number 1"),
+            await self.get("Serial Number 2"),
+            await self.get("Serial Number 3"),
+            await self.get("Serial Number 4"),
         ]
 
-    def read_device_type(self) -> bytes:
+    async def read_device_type(self) -> bytes:
         """The device type should always be 'LPC1'"""
 
         obj = self.object_directory["Device Type"]
 
-        return self._get(obj[0], obj[1], None)  # Get uint32 as bytearray
+        return await self._get(obj[0], obj[1], None)  # Get uint32 as bytearray
 
-    def compare(self, addr_1, addr_2, length):
+    async def compare(self, addr_1, addr_2, length):
         """
         Takes two addresses and a length and compare the data.
         Raises IspCompareError if a mismatch is found.
         """
 
         try:
-            self.send("Compare Address 1", addr_1)
-            self.send("Compare Address 2", addr_2)
-            self.send("Compare Length", length)
+            await self.send("Compare Address 1", addr_1)
+            await self.send("Compare Address 2", addr_2)
+            await self.send("Compare Length", length)
 
         except IspSdoAbortedError as e:
             if e.str() == "COMPARE_ERROR":
-                offset = self.get("Compare mismatch")
+                offset = await self.get("Compare mismatch")
 
                 raise IspCompareError(offset) from e
 
-    def flash_image(self, start, data):
+    async def flash_image(self, start, data):
         logging.info("Data to be written: %d Byte", len(data))
 
         block_size = 4096
@@ -374,9 +352,9 @@ class CanIsp:
         )
 
         # TODO: Add check if we need to erase block use Blank check sectors
-        self.unlock()  # Unlock writes
-        self.prepare_flash_sectors(start_sector, start_sector + sectors - 1)
-        self.erase_flash_sectors(start_sector, start_sector + sectors - 1)
+        await self.unlock()  # Unlock writes
+        await self.prepare_flash_sectors(start_sector, start_sector + sectors - 1)
+        await self.erase_flash_sectors(start_sector, start_sector + sectors - 1)
 
         blocks = sectors
 
@@ -389,13 +367,13 @@ class CanIsp:
             logging.info("Block length %d", len(block))
 
             # Transfer data block to the RAM of the MCU
-            self.write_to_ram(self.ram_offset, block)
+            await self.write_to_ram(self.ram_offset, block)
 
             logging.info("Copy to Flash")
-            self.prepare_flash_sectors(block_num, block_num)
+            await self.prepare_flash_sectors(block_num, block_num)
 
             # Copy block from MCU RAM to MCU Flash
-            self.copy_ram_to_flash(
+            await self.copy_ram_to_flash(
                 self.ram_offset,
                 block_size * block_num,
                 block_size,
@@ -421,7 +399,7 @@ class CanIsp:
 
         return data
 
-    def write(self, filename, section):
+    async def write(self, filename, section):
         assert section in ["config", "flash"]
 
         with open(filename, "rb") as fd:
@@ -439,20 +417,20 @@ class CanIsp:
             start = 28 * 1024
 
         if len(data) > length:
-            self.console_log(
+            await self.console_log(
                 "Supplied Image is too long for section. Allowed {} bytes, is {} bytes".format(length, len(data))
             )
 
             exit(1)
 
-        self.console_log("Writing section {}".format(section))
+        await self.console_log("Writing section {}".format(section))
         start_t = time.time()
 
-        self.flash_image(start, data)
+        await self.flash_image(start, data)
 
         stop_t = time.time()
 
-        self.console_log(
+        await self.console_log(
             "Write",
             len(data),
             "in",
@@ -462,7 +440,7 @@ class CanIsp:
             "Bytes/sec",
         )
 
-    def read(self, filename, section):
+    async def read(self, filename, section):
         assert section in ["config", "flash"]
 
         if section == "flash":
@@ -474,14 +452,14 @@ class CanIsp:
             length = 4 * 1024
             start = 28 * 1024
 
-        self.console_log("Reading section {}".format(section))
+        await self.console_log("Reading section {}".format(section))
         start_t = time.time()
 
-        data = self.read_memory(start, length)
+        data = await self.read_memory(start, length)
 
         stop_t = time.time()
 
-        self.console_log(
+        await self.console_log(
             "Read",
             length,
             "in",
@@ -494,16 +472,16 @@ class CanIsp:
         with open(filename, "wb") as fd:
             fd.write(data)
 
-    def write_flash(self, filename):
-        self.write(filename, "flash")
+    async def write_flash(self, filename):
+        await self.write(filename, "flash")
 
-    def isp_exec(self, filename):
+    async def isp_exec(self, filename):
         with open(filename, "rb") as fd:
             data = fd.read()
 
-        self.unlock()
-        self.write_to_ram(0x10000500, data)
-        self.go(0x10000500)
+        await self.unlock()
+        await self.write_to_ram(0x10000500, data)
+        await self.go(0x10000500)
 
-    def reset(self):
-        self.isp_exec(os.path.join(basepath, "loader/reset.bin"))
+    async def reset(self):
+        await self.isp_exec(os.path.join(basepath, "loader/reset.bin"))

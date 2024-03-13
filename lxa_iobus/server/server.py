@@ -114,24 +114,23 @@ class LXAIOBusServer:
                 if shutdown:
                     return
 
-                self.can_isp.console_log(
+                await self.can_isp.console_log(
                     "Flashing {} ({})".format(
                         node.name,
                         node.address,
                     )
                 )
 
-                self.can_isp.console_log("Invoking isp")
+                await self.can_isp.console_log("Invoking isp")
                 await node.invoke_isp()
 
-                self.can_isp.console_log("Start flashing")
-                callback = partial(self.can_isp.write_flash, file_name)
-                await self.loop.run_in_executor(None, callback)
+                await self.can_isp.console_log("Start flashing")
+                await self.can_isp.write_flash(file_name)
 
-                self.can_isp.console_log("Resetting node")
-                await self.loop.run_in_executor(None, self.can_isp.reset)
+                await self.can_isp.console_log("Resetting node")
+                await self.can_isp.reset()
 
-                self.can_isp.console_log("Flashing done")
+                await self.can_isp.console_log("Flashing done")
 
             except CancelledError:
                 return
