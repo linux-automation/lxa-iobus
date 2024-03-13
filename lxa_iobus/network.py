@@ -474,7 +474,7 @@ class LxaNetwork:
                 )
 
                 if not response:
-                    logger.debug("fast_scan: Setting node ID not working")
+                    logger.error("fast_scan: failed to set node ID")
 
                 self.nodes[node_id] = LxaNode(
                     lxa_network=self,
@@ -489,7 +489,7 @@ class LxaNetwork:
                 response = await self.lss_request(gen_lss_switch_mode_global_message(LssMode.OPERATION))
 
                 if not response:
-                    logger.debug("fast_scan: Setting node ID not working")
+                    logger.debug("fast_scan: failed to make node operational")
 
         except LxaShutdown:
             logger.debug("fast_scan: shutdown")
