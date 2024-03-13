@@ -631,6 +631,142 @@ class Inputs(InputOutputBase):
         return this
 
 
+class Timers(ProcessDataObject):
+    """Timers that can generate and capture timestamped events"""
+
+    INDEX = 0x2102
+
+    @classmethod
+    async def new(cls, node):
+        this = cls(node)
+
+        # Check that we speek the same protocol version as the node
+        version = await this.version()
+
+        if version != 1:
+            raise ProtocolVersionError(f"Timers expected protocol version 1 but got {version}")
+
+        # Add fields for which we need to know the number of channels
+        channel_count_out = await this.channel_count_out()
+        channel_count_in = await this.channel_count_in()
+
+        # The queue fill level sub index
+        queue_levels_encoding = "B" * (channel_count_out + channel_count_in)
+        queue_levels_fields_out = list(f"out{i}" for i in range(channel_count_out))
+        queue_levels_fields_in = list(f"in{i}" for i in range(channel_count_in))
+        queue_levels_fields = queue_levels_fields_out + queue_levels_fields_in
+
+        this.add_sub("queue_capacities", SubIndex(6, queue_levels_encoding, queue_levels_fields))
+        this.add_sub("queue_levels", SubIndex(7, queue_levels_encoding, queue_levels_fields))
+
+        # The error flags sub index
+        flag_fields = list()
+
+        for instance in range(channel_count_out):
+            flag_fields.append(f"output_overflow_{instance}")
+            flag_fields.append(f"output_missed_{instance}")
+
+        for instance in range(channel_count_in):
+            flag_fields.append(f"input_overflow_{instance}")
+
+        this.add_sub("flags", BitFieldSubIndex.u32(3, flag_fields))
+
+        # Output fifos
+        out_channels = list(
+            SubIndex(8 + instance, "QB", ("timestamp", "state")) for instance in range(channel_count_out)
+        )
+
+        this.add_sub_array("output", out_channels)
+
+        # Input fifos
+        in_channels = list(
+            SubIndex(8 + channel_count_out + instance, "QB", ("timestamp", "state"))
+            for instance in range(channel_count_in)
+        )
+
+        this.add_sub_array("input", in_channels, writable=False)
+
+        return this
+
+    def __init__(self, node):
+        """Do not use directly.
+
+        Use await Timers.new() instead."""
+
+        super().__init__(node)
+
+        # Set up subindices with static position and encoding
+        self.add_sub("channel_count_out", SubIndex.u32(0), writable=False, cacheable=True)
+        self.add_sub("channel_count_in", SubIndex.u32(1), writable=False, cacheable=True)
+        self.add_sub("version", SubIndex.u32(2), writable=False, cacheable=True)
+        self.add_sub("frequency", SubIndex.u32(4), writable=False, cacheable=True)
+        self.add_sub("time", SubIndex.u64(5), writable=False)
+
+    async def clear_flags(self):
+        await self.set_flags(0xFFFFFFFF)
+
+    async def set_output_now(self, instance, state):
+        """Clear the output queue of a channel and set its state immediately"""
+
+        await self.set_output(instance, {"timestamp": 0, "state": state})
+
+
+class Triggers(ProcessDataObject):
+    """Control the reference level of a comparator
+
+    This is used to provide a binary "higher than threshold"/
+    "lower than threshold" value for use in the Timers input capture.
+    """
+
+    INDEX = 0x2103
+
+    @classmethod
+    async def new(cls, node):
+        this = cls(node)
+
+        # Check that we speek the same protocol version as the node
+        version = await this.version()
+
+        if version != 1:
+            raise ProtocolVersionError(f"Triggers expected protocol version 1 but got {version}")
+
+        # Add fields for which we need to know the number of channels
+        channel_count = await this.channel_count()
+
+        channels = list(SubIndex.u16(2 + instance) for instance in range(channel_count))
+
+        this.add_sub_array("_threshold", channels)
+
+        return this
+
+    def __init__(self, node):
+        """Do not use directly.
+
+        Use await Triggers.new() instead."""
+
+        super().__init__(node)
+
+        self.add_sub("channel_count", SubIndex.u32(0), writable=False, cacheable=True)
+        self.add_sub("version", SubIndex.u32(1), writable=False, cacheable=True)
+
+    async def threshold(self, instance):
+        """Get the threshold level
+
+        Returns: the level as floating point number between 0 and 1
+        """
+
+        return await self._threshold(instance) / 0xFFFF
+
+    async def set_threshold(self, instance, level):
+        """Set the threshold level on a scale between 0 and 1."""
+
+        level = int(level * 0xFFFF)
+        level = min(level, 0xFFFF)
+        level = max(level, 0)
+
+        await self._set_threshold(instance, level)
+
+
 class Locator(ProcessDataObject):
     """A flashing LED to find the correct node in a network
 
@@ -813,6 +949,8 @@ class ObjectDirectory(dict):
 
     _CONFIGURATIONLESS_OBJECTS = {
         "version_info": VersionInfo,
+        "timers": Timers,
+        "triggers": Triggers,
         "locator": Locator,
         "bootloader": Bootloader,
         "chip_uid": ChipUid,
