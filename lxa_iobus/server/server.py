@@ -24,6 +24,7 @@ class LXAIOBusServer:
         self.network = network
         self.firmware_directory = firmware_directory
         self.allow_custom_firmware = allow_custom_firmware
+        self._isp_console = list()
 
         self.state = {"low_level_nodes": {}, "low_level_nodes_state": {}, "nodes": {}}
 
@@ -93,10 +94,7 @@ class LXAIOBusServer:
         self.loop.create_task(self.flush_state())
 
         # setup can isp
-        self.can_isp = CanIsp(
-            server=self,
-            network=network,
-        )
+        self.can_isp = CanIsp(node=network.isp_node, logging_callback=self._isp_logging_callback)
 
         # flash worker
         self._running = True
@@ -105,6 +103,11 @@ class LXAIOBusServer:
 
     def shutdown(self):
         self._running = False
+
+    async def _isp_logging_callback(self, message):
+        self._isp_console = self._isp_console[-99:] + [message]
+
+        await self.rpc.notify("isp_console", self._isp_console)
 
     async def flash_worker(self):
         while self._running:

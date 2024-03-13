@@ -129,23 +129,17 @@ class CanIsp:
         0x1430102B: "LPC11C24FBD48/301",
     }
 
-    def __init__(self, server, network):
-        self.server = server
-        self.network = network
-
-        self._console = []
+    def __init__(self, node, logging_callback=None):
+        self.node = node
+        self.logging_callback = logging_callback
 
     async def console_log(self, *message):
-        console_max_len = 100
-
         message = "{}: {}".format(str(datetime.now()), " ".join([str(i) for i in message]))
 
-        self._console.append(message)
-
-        if len(self._console) > console_max_len:
-            self._console = self._console[len(self._console) - console_max_len :]
-
-        await self.server.rpc.notify("isp_console", self._console)
+        if self.logging_callback is not None:
+            await self.logging_callback(message)
+        else:
+            print(message)
 
     @staticmethod
     def unpack(data: bytes, size: int = None):
@@ -184,8 +178,7 @@ class CanIsp:
     async def _get(self, index: int, subindex: int, size):
         """Gets data from the MCU and converts it"""
 
-        isp_node = self.network.isp_node
-        payload = await isp_node.sdo_read(index, subindex)
+        payload = await self.node.sdo_read(index, subindex)
         return self.unpack(payload, size)
 
     async def get(self, name):
