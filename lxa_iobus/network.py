@@ -52,6 +52,12 @@ class LxaNetwork:
 
         self.tx_error = False
 
+        self.isp_node = LxaNode(
+            lxa_network=self,
+            lss_address=[0, 0, 0, 0],
+            node_id=125,
+        )
+
         self._running = False
 
     # interface checker code ##################################################
@@ -228,7 +234,10 @@ class LxaNetwork:
                     sdo_message = parse_sdo_message(message)
                     node_id = sdo_message.node_id
 
-                    if node_id in self.nodes:
+                    if node_id == 125:
+                        self.isp_node.set_sdo_response(sdo_message)
+
+                    elif node_id in self.nodes:
                         self.nodes[node_id].set_sdo_response(sdo_message)
 
             except Exception as e:
@@ -489,9 +498,6 @@ class LxaNetwork:
         try:
             while self._running and self._interface_state:
                 for node_id, node in self.nodes.copy().items():
-                    if node_id == 125:  # ISP
-                        continue
-
                     if not await node.ping():
                         logger.warning("lss_ping: node %s does not respond", node)
 
@@ -514,14 +520,7 @@ class LxaNetwork:
         self._running = True
 
         while self._running:
-            self.nodes = {
-                125: LxaNode(  # ISP node
-                    lxa_network=self,
-                    lss_address=[0, 0, 0, 0],
-                    node_id=125,
-                ),
-            }
-
+            self.nodes = {}
             self._outgoing_queue = Queue()
             self._pending_lss_request = None
 
@@ -545,9 +544,6 @@ class LxaNetwork:
             )
 
             self.bus.shutdown()
-
-    def get_isp_node(self):
-        return self.nodes[125]
 
     def get_node_by_name(self, name):
         for _, node in self.nodes.copy().items():
