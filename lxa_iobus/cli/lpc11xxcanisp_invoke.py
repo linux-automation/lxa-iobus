@@ -1,40 +1,39 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import contextlib
-import struct
+import argparse
+import asyncio
+import logging
 
-import canopen
-from canopen.sdo.exceptions import SdoCommunicationError
+from lxa_iobus.network import LxaNetwork
 
-
-class CanOpen:
-    """Minimal Setup to control one ethmux"""
-
-    def __init__(self, channel="can0", node_id=1):
-        self.node_id = node_id
-        self.network = canopen.Network()
-        self.network.connect(channel=channel, bustype="socketcan")
-        self.node = self.network.add_node(self.node_id)
-
-    def setup(self):
-        """Setup one node with a new node_id"""
-        """Warning this expects only one CANOpen node on the network!"""
-        self.network.lss.send_switch_state_global(self.network.lss.CONFIGURATION_STATE)
-        self.network.lss.configure_node_id(1)
-        self.network.lss.send_switch_state_global(self.network.lss.WAITING_STATE)
-
-    def invoke_isp(self):
-        """set port state"""
-        self.node.sdo.download(0x2B07, 0, struct.pack("<I", 0x12345678))
+from . import async_main
 
 
-def main():
-    can = CanOpen()
-    can.setup()
+@async_main
+async def main():
+    parser = argparse.ArgumentParser("lxa-iobus-lpc11xxcanisp-invoke")
+    parser.add_argument("--interface", "-i", type=str, help="CAN interface to use", default="can0")
+    parser.add_argument(
+        "-v",
+        help="Be verbose",
+        action="store_true",
+    )
+    args = parser.parse_args()
 
-    with contextlib.suppress(SdoCommunicationError):
-        can.invoke_isp()
+    if args.v:
+        logging.basicConfig(level=logging.INFO)
+    else:
+        logging.basicConfig(level=logging.WARN)
+
+    network = LxaNetwork(loop=asyncio.get_running_loop(), interface=args.interface)
+    asyncio.create_task(network.run(with_lss=False))
+    await network.await_running()
+
+    node = await network.setup_single_node()
+    await node.invoke_isp()
+
+    network.shutdown()
 
 
 if __name__ == "__main__":
