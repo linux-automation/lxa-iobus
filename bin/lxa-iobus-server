@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from argparse import ArgumentParser
-import traceback
-import threading
 import asyncio
-import logging
-import signal
 import errno
-import sys
+import logging
 import os
+import signal
+import sys
+import threading
+import traceback
+from argparse import ArgumentParser
 
 from aiohttp.web import Application, run_app
 
-from lxa_iobus.server.server import LXAIOBusServer
 from lxa_iobus.network import LxaNetwork
+from lxa_iobus.server.server import LXAIOBusServer
 
 
 def trace_handler(num, frame):
@@ -142,8 +142,8 @@ loop.create_task(server.flush_state_periodicly())
 if args.shell:
 
     def _start_shell():
-        from traitlets.config import Config
         import IPython
+        from traitlets.config import Config
 
         config = Config()
 

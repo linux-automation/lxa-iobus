@@ -1,28 +1,27 @@
-from copy import deepcopy
-import itertools
 import asyncio
-import logging
-import time
-import json
-import os
-import errno
 import enum
+import errno
+import itertools
+import json
+import logging
+import os
 import signal
+import time
+from copy import deepcopy
 
-from janus import Queue, SyncQueueEmpty
 from can import Bus, CanError
+from janus import Queue, SyncQueueEmpty
 
 from lxa_iobus.canopen import (
-    gen_lss_switch_mode_global_message,
-    gen_invalidate_node_ids_message,
-    gen_lss_fast_scan_message,
-    gen_lss_configure_node_id_message,
     LSS_PROTOCOL_IDENTIFIER_SLAVE_TO_MASTER,
     SDO_PROTOCOL_IDENTIFIER_SLAVE_TO_MASTER,
-    parse_sdo_message,
     LssMode,
+    gen_invalidate_node_ids_message,
+    gen_lss_configure_node_id_message,
+    gen_lss_fast_scan_message,
+    gen_lss_switch_mode_global_message,
+    parse_sdo_message,
 )
-
 from lxa_iobus.node import LxaNode
 
 logger = logging.getLogger("lx-iobus.network")

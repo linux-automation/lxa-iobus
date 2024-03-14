@@ -1,9 +1,7 @@
 import struct
-
 from time import time
 
 from can import Message
-
 
 LSS_PROTOCOL_IDENTIFIER_SLAVE_TO_MASTER = 2020
 LSS_PROTOCOL_IDENTIFIER_MASTER_TO_SLAVE = 2021

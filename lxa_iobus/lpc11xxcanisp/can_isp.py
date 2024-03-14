@@ -1,10 +1,10 @@
-from functools import partial
-from datetime import datetime
 import asyncio
 import logging
+import os
 import struct
 import time
-import os
+from datetime import datetime
+from functools import partial
 
 from lxa_iobus.lpc11xxcanisp import loader
 

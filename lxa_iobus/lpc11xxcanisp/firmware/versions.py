@@ -1,6 +1,6 @@
 import os
 
-from lxa_iobus.node_drivers import PTXIOMuxDriver, Iobus4Do3Di3AiDriver, EthernetMuxDriver
+from lxa_iobus.node_drivers import EthernetMuxDriver, Iobus4Do3Di3AiDriver, PTXIOMuxDriver
 
 FIRMWARE_DIR = os.path.dirname(__file__)
 
