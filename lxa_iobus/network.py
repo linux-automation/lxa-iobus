@@ -6,7 +6,6 @@ import json
 import logging
 import os
 import signal
-import time
 from copy import deepcopy
 
 from can import Bus, CanError
@@ -78,7 +77,7 @@ class LxaNetwork:
         return False
 
     async def await_interface_is_up(self):
-        def _await_interface_is_up():
+        if True:
             while self._running:
                 if self.interface_is_up():
                     self._interface_state = True
@@ -89,21 +88,17 @@ class LxaNetwork:
 
                 logger.debug("interface is down")
 
-                time.sleep(1)
-
-        await self.loop.run_in_executor(None, _await_interface_is_up)
+                await asyncio.sleep(1)
 
     async def update_interface_state(self):
-        def _update_interface_state():
+        if True:
             while self._running:
                 self._interface_state = self.interface_is_up()
 
                 if not self._interface_state:
                     return
 
-                time.sleep(1)
-
-        await self.loop.run_in_executor(None, _update_interface_state)
+                await asyncio.sleep(1)
 
     # lss node address cache ##################################################
     async def load_lss_address_cache(self):
