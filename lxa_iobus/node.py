@@ -1,23 +1,22 @@
-import concurrent
 import asyncio
+import concurrent
 import logging
-import struct
 import os
-
-from lxa_iobus.lpc11xxcanisp.firmware.versions import FIRMWARE_VERSIONS
-from lxa_iobus.node_input import Input, Output, ADC
-from lxa_iobus.node_drivers import drivers
-from lxa_iobus.utils import array2int
+import struct
 
 from lxa_iobus.canopen import (
     SDO_TRANSFER_TYPE_DATA_WITH_SIZE,
-    gen_sdo_initiate_download,
-    gen_sdo_segment_download,
-    gen_sdo_initiate_upload,
     SDO_TRANSFER_TYPE_SIZE,
-    gen_sdo_segment_upload,
     SdoAbort,
+    gen_sdo_initiate_download,
+    gen_sdo_initiate_upload,
+    gen_sdo_segment_download,
+    gen_sdo_segment_upload,
 )
+from lxa_iobus.lpc11xxcanisp.firmware.versions import FIRMWARE_VERSIONS
+from lxa_iobus.node_drivers import drivers
+from lxa_iobus.node_input import ADC, Input, Output
+from lxa_iobus.utils import array2int
 
 DEFAULT_TIMEOUT = 1
 

@@ -1,20 +1,19 @@
-from concurrent.futures import CancelledError
-from functools import partial
-from datetime import datetime
-from pprint import pformat
 import asyncio
-import logging
 import json
+import logging
 import os
+from concurrent.futures import CancelledError
+from datetime import datetime
+from functools import partial
+from pprint import pformat
 
-from aiohttp.web import FileResponse, Response, HTTPFound, json_response
+from aiohttp.web import FileResponse, HTTPFound, Response, json_response
 from aiohttp_json_rpc import JsonRpc
 
 from lxa_iobus.lpc11xxcanisp.can_isp import CanIsp
-
 from lxa_iobus.lpc11xxcanisp.firmware.versions import (
-    FIRMWARE_VERSIONS,
     FIRMWARE_DIR,
+    FIRMWARE_VERSIONS,
 )
 
 STATIC_ROOT = os.path.join(os.path.dirname(__file__), "static")
