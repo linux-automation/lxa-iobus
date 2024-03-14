@@ -100,61 +100,59 @@ class LxaNetwork:
 
     # lss node address cache ##################################################
     def load_lss_address_cache(self):
-        if True:
-            if not self.lss_address_cache_file:
-                logger.info("no lss address cache file set. skip loading")
+        if not self.lss_address_cache_file:
+            logger.info("no lss address cache file set. skip loading")
 
-                return
+            return
 
-            # create file if not present
-            if not os.path.exists(self.lss_address_cache_file):
-                try:
-                    with open(self.lss_address_cache_file, "w+") as f:
-                        f.write("[]")
-
-                except Exception:
-                    logger.error(
-                        "exception raised while creating %s",
-                        self.lss_address_cache_file,
-                        exc_info=True,
-                    )
-
-            # reading file
-            file_content = ""
-
+        # create file if not present
+        if not os.path.exists(self.lss_address_cache_file):
             try:
-                with open(self.lss_address_cache_file, "r") as f:
-                    file_content = f.read()
-
-            except FileNotFoundError:
-                logger.error(
-                    "lss node cache file %s does not exist",
-                    self.lss_address_cache_file,
-                )
-
-            try:
-                self.lss_address_cache = json.loads(file_content)
-
-            except Exception:
-                logger.error("exception raised while reading %s", self.lss_address_cache_file, exc_info=True)
-
-    def write_lss_address_cache(self):
-        if True:
-            if not self.lss_address_cache_file:
-                logger.debug("no lss address cache file set. skip writing")
-
-                return
-
-            try:
-                with open(self.lss_address_cache_file, "w") as f:
-                    f.write(json.dumps(self.lss_address_cache))
+                with open(self.lss_address_cache_file, "w+") as f:
+                    f.write("[]")
 
             except Exception:
                 logger.error(
-                    "exception raised while writing %s",
+                    "exception raised while creating %s",
                     self.lss_address_cache_file,
                     exc_info=True,
                 )
+
+        # reading file
+        file_content = ""
+
+        try:
+            with open(self.lss_address_cache_file, "r") as f:
+                file_content = f.read()
+
+        except FileNotFoundError:
+            logger.error(
+                "lss node cache file %s does not exist",
+                self.lss_address_cache_file,
+            )
+
+        try:
+            self.lss_address_cache = json.loads(file_content)
+
+        except Exception:
+            logger.error("exception raised while reading %s", self.lss_address_cache_file, exc_info=True)
+
+    def write_lss_address_cache(self):
+        if not self.lss_address_cache_file:
+            logger.debug("no lss address cache file set. skip writing")
+
+            return
+
+        try:
+            with open(self.lss_address_cache_file, "w") as f:
+                f.write(json.dumps(self.lss_address_cache))
+
+        except Exception:
+            logger.error(
+                "exception raised while writing %s",
+                self.lss_address_cache_file,
+                exc_info=True,
+            )
 
     # CAN send and receive threads ############################################
     def send(self):
