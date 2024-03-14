@@ -99,8 +99,8 @@ class LxaNetwork:
             await asyncio.sleep(1)
 
     # lss node address cache ##################################################
-    async def load_lss_address_cache(self):
-        def _load_lss_address_cache():
+    def load_lss_address_cache(self):
+        if True:
             if not self.lss_address_cache_file:
                 logger.info("no lss address cache file set. skip loading")
 
@@ -138,10 +138,8 @@ class LxaNetwork:
             except Exception:
                 logger.error("exception raised while reading %s", self.lss_address_cache_file, exc_info=True)
 
-        self.loop.run_in_executor(None, _load_lss_address_cache)
-
-    async def write_lss_address_cache(self):
-        def _write_lss_address_cache():
+    def write_lss_address_cache(self):
+        if True:
             if not self.lss_address_cache_file:
                 logger.debug("no lss address cache file set. skip writing")
 
@@ -157,8 +155,6 @@ class LxaNetwork:
                     self.lss_address_cache_file,
                     exc_info=True,
                 )
-
-        self.loop.run_in_executor(None, _write_lss_address_cache)
 
     # CAN send and receive threads ############################################
     def send(self):
@@ -439,7 +435,7 @@ class LxaNetwork:
                 logger.debug("fast_scan: No response to switch_mode_global")
 
             # List of old node
-            await self.load_lss_address_cache()
+            self.load_lss_address_cache()
             old_nodes = deepcopy(self.lss_address_cache)
 
             while self._running and self._interface_state:
@@ -458,7 +454,7 @@ class LxaNetwork:
 
                 if lss not in self.lss_address_cache:
                     self.lss_address_cache.append(lss)
-                    self.loop.create_task(self.write_lss_address_cache())
+                    self.write_lss_address_cache()
 
                 logger.debug("fast_scan: lss: %s", lss)
 
