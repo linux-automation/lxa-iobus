@@ -1,5 +1,6 @@
 import asyncio
 import concurrent
+import contextlib
 import logging
 import os
 import struct
@@ -169,7 +170,7 @@ class LxaNode:
                 if not response.type == "upload_segment":
                     raise Exception("Got wrong answer: {}".format(response.type))
 
-                if not toggle == response.toggle:
+                if toggle != response.toggle:
                     Exception(
                         "Toggle bit does not match: is: {}, should: {}".format(
                             response.toggle,
@@ -426,8 +427,5 @@ class LxaNode:
         self.locator_state = state
 
     async def invoke_isp(self):
-        try:
+        with contextlib.suppress(TimeoutError):
             await self.sdo_write(0x2B07, 0, struct.pack("I", 0x12345678))
-
-        except TimeoutError:
-            pass

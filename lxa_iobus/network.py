@@ -58,8 +58,12 @@ class LxaNetwork:
     def interface_is_up(self):
         path = os.path.join("/sys/class/net/", self.interface, "operstate")
 
-        if os.path.exists(path) and open(path, "r").read().strip() in ["up", "unknown"]:
-            return True
+        if os.path.exists(path):
+            with open(path, "r") as fd:
+                state = fd.read()
+
+            if state.strip() in ["up", "unknown"]:
+                return True
 
         return False
 

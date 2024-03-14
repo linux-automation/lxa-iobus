@@ -244,19 +244,11 @@ def gen_sdo_segment_download(node_id, toggle, complete, seg_data):
     if not isinstance(toggle, bool):
         raise ValueError
 
-    if toggle:
-        toggle = 1
-    else:
-        toggle = 0
-
     if not isinstance(complete, bool):
         raise ValueError
 
-    if complete:
-        complete = 1
-
-    else:
-        complete = 0
+    toggle = int(toggle)
+    complete = int(complete)
 
     if len(seg_data) not in range(0, 8):
         raise ValueError
@@ -311,11 +303,7 @@ def gen_sdo_segment_upload(node_id, toggle):
     if not isinstance(toggle, bool):
         raise ValueError
 
-    if toggle:
-        toggle = 1
-
-    else:
-        toggle = 0
+    toggle = int(toggle)
 
     return Message(
         timestamp=time(),

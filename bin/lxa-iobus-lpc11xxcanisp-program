@@ -349,7 +349,9 @@ def _isp_info(isp):
 def _isp_write(isp, filename, section):
     assert section in ["config", "flash"]
 
-    data = open(filename, "rb").read()
+    with open(filename, "rb") as fd:
+        data = fd.read()
+
     if section == "flash":
         data = fix_checksum(data)
 
@@ -392,11 +394,14 @@ def _isp_read(isp, filename, section):
 
     stop_t = time.time()
     print("Read", length, "in", stop_t - start_t, ":", length / (stop_t - start_t), "Bytes/sec")
-    open(filename, "wb").write(data)
+
+    with open(filename, "wb") as fd:
+        fd.write(data)
 
 
 def _isp_exec(isp, filename):
-    data = open(filename, "rb").read()
+    with open(filename, "rb") as fd:
+        data = fd.read()
 
     isp.unlock()
     isp.write_to_ram(0x10000500, data)
