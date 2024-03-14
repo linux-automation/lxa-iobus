@@ -424,7 +424,8 @@ class CanIsp:
     def write(self, filename, section):
         assert section in ["config", "flash"]
 
-        data = open(filename, "rb").read()
+        with open(filename, "rb") as fd:
+            data = fd.read()
 
         if section == "flash":
             data = self.fix_checksum(data)
@@ -490,13 +491,15 @@ class CanIsp:
             "Bytes/sec",
         )
 
-        open(filename, "wb").write(data)
+        with open(filename, "wb") as fd:
+            fd.write(data)
 
     def write_flash(self, filename):
         self.write(filename, "flash")
 
     def isp_exec(self, filename):
-        data = open(filename, "rb").read()
+        with open(filename, "rb") as fd:
+            data = fd.read()
 
         self.unlock()
         self.write_to_ram(0x10000500, data)
