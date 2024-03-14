@@ -26,7 +26,7 @@ class CanOpen:
 
     def invoke_isp(self):
         """set port state"""
-        self.node.sdo.download(0x2B07, 0, struct.pack("I", 0x12345678))
+        self.node.sdo.download(0x2B07, 0, struct.pack("<I", 0x12345678))
 
 
 def main():

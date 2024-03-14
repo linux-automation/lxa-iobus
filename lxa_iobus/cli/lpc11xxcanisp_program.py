@@ -66,7 +66,7 @@ class IspCompareError(Exception):
 
 
 class CanIsp:
-    DATA_SIZES = {8: "B", 16: "H", 32: "I"}
+    DATA_SIZES = {8: "<B", 16: "<H", 32: "<I"}
     ram_offset = 0x10000500  # Offset to safely usable RAM
 
     object_directory = {
@@ -330,10 +330,10 @@ def fix_checksum(data):
     """
 
     vector_table = data[0 : 4 * 7]  # First 7 entries
-    vector_table = struct.unpack("iiiiiii", vector_table)
+    vector_table = struct.unpack("<iiiiiii", vector_table)
 
     checksum = 0 - (sum(vector_table))
-    checksum = struct.pack("i", checksum)
+    checksum = struct.pack("<i", checksum)
 
     data = data[0 : 4 * 7] + checksum + data[4 * 8 :]
     return data
