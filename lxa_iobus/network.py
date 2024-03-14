@@ -77,28 +77,26 @@ class LxaNetwork:
         return False
 
     async def await_interface_is_up(self):
-        if True:
-            while self._running:
-                if self.interface_is_up():
-                    self._interface_state = True
+        while self._running:
+            if self.interface_is_up():
+                self._interface_state = True
 
-                    logger.debug("interface_is_up")
+                logger.debug("interface_is_up")
 
-                    return
+                return
 
-                logger.debug("interface is down")
+            logger.debug("interface is down")
 
-                await asyncio.sleep(1)
+            await asyncio.sleep(1)
 
     async def update_interface_state(self):
-        if True:
-            while self._running:
-                self._interface_state = self.interface_is_up()
+        while self._running:
+            self._interface_state = self.interface_is_up()
 
-                if not self._interface_state:
-                    return
+            if not self._interface_state:
+                return
 
-                await asyncio.sleep(1)
+            await asyncio.sleep(1)
 
     # lss node address cache ##################################################
     async def load_lss_address_cache(self):
