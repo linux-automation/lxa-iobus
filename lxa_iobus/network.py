@@ -235,6 +235,9 @@ class LxaNetwork:
                     elif self._node_in_setup is not None:
                         self._node_in_setup.set_sdo_response(sdo_message)
 
+                    else:
+                        logger.warn(f"rx: got sdo response for unknown node id {node_id}")
+
             except Exception as e:
                 logger.exception("rx: crashed with unhandled error %s", e)
                 logger.error("rx: shutdown! Stopping application.")
