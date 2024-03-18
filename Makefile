@@ -21,6 +21,9 @@ clean:
 	rm -rf $(PYTHON_PACKAGING_VENV)
 	rm -rf $(PYTHON_TESTING_ENV)
 
+# Note that there is no check if any of the source files has changed,
+# so you will have to manually run make clean to test any changes you
+# have made.
 server: env
 	. $(PYTHON_VENV)/bin/activate && \
 	lxa-iobus-server \
