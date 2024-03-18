@@ -12,6 +12,8 @@ $(PYTHON_VENV)/.created: setup.py
 	python3 -m pip install -e .[full] && \
 	date > $(PYTHON_VENV)/.created
 
+.PHONY: env clean server
+
 env: $(PYTHON_VENV)/.created
 
 clean:
@@ -34,6 +36,8 @@ $(PYTHON_PACKAGING_VENV)/.created: REQUIREMENTS.packaging.txt
 	python3 -m pip install --upgrade pip && \
 	python3 -m pip install -r REQUIREMENTS.packaging.txt
 	date > $(PYTHON_PACKAGING_VENV)/.created
+
+.PHONY: packaging-env build _release
 
 packaging-env: $(PYTHON_PACKAGING_VENV)/.created
 
