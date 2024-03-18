@@ -94,11 +94,6 @@ class SdoMessage:
             setattr(self, key, value)
 
 
-# lss_adresse: sowas wie mac adresse (wie eingebrannt)
-# id_number  : (unbekannt, kann man wahrscheinlich nicht verstehen)
-# node_id    : temporaere adresse auf dem bus (wie ip unter dhcp)
-
-
 def gen_lss_switch_mode_global_message(lss_mode):
     if lss_mode not in (LssMode.OPERATION, LssMode.CONFIGURATION):
         raise ValueError
