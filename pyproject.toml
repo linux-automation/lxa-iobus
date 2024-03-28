@@ -19,6 +19,7 @@ dependencies = [
 ]
 
 [project.scripts]
+optick = "lxa_iobus.cli.optick:main"
 lxa-iobus-server = "lxa_iobus.cli.server:main"
 lxa-iobus-lpc11xxcanisp-invoke = "lxa_iobus.cli.lpc11xxcanisp_invoke:main"
 lxa-iobus-lpc11xxcanisp-program = "lxa_iobus.cli.lpc11xxcanisp_program:main"

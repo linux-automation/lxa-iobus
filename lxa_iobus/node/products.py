@@ -93,6 +93,29 @@ class EthernetMux(Node):
     OUTPUT_NAMES = [["SW"]]
 
 
+class Optick(Node):
+    """LXA Optick node driver
+
+    The following pins are provided by this driver:
+
+      - OUT0, OUT1: Digital outputs
+      - IN0, IN1: Digital inputs
+      - IN0_RAW, IN1_RAW: Analog inputs
+    """
+
+    LSS_VENDOR = 0x507
+    LSS_PRODUCT = 3
+    LSS_REVISON = 1
+
+    NAME_PREFIX = "Optick-00043."
+    FIRMWARE_FILE = "optick-t01.bin"
+    FIRMWARE_VERSION = (0, 6, 0)
+
+    ADC_NAMES = ["IN0_RAW", "IN1_RAW", "VIN"]
+    INPUT_NAMES = [["IN0", "IN1"]]
+    OUTPUT_NAMES = [["OUT0", "OUT1"]]
+
+
 class Unknown(Node):
     """Catch-all for all other nodes
 
@@ -113,7 +136,7 @@ class Unknown(Node):
 
 
 def find_product(lss_address):
-    for node_cls in [Iobus4Do3Di3Ai, PTXIOMux, EthernetMux]:
+    for node_cls in [Iobus4Do3Di3Ai, PTXIOMux, EthernetMux, Optick]:
         node = node_cls.try_match(lss_address)
 
         if node is not None:
