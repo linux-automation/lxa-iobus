@@ -36,7 +36,7 @@ class Iobus4Do3Di3Ai(Node):
 
     NAME_PREFIX = "4DO-3DI-3AI-00005."
     FIRMWARE_FILE = "lxatac_can_io-t01.bin"
-    FIRMWARE_VERSION = (0, 5, 0)
+    FIRMWARE_VERSION = (0, 6, 0)
 
     ADC_NAMES = ["VIN", "AIN0", "AIN1", "AIN2"]
     INPUT_NAMES = [["IN0", "IN1", "IN2"]]
@@ -86,7 +86,7 @@ class EthernetMux(Node):
 
     NAME_PREFIX = "Ethernet-Mux-00012."
     FIRMWARE_FILE = "ethmux-S01.bin"
-    FIRMWARE_VERSION = (0, 5, 0)
+    FIRMWARE_VERSION = (0, 6, 0)
 
     ADC_NAMES = ["AIN0", "VIN"]
     INPUT_NAMES = [["SW_IN", "SW_EXT"]]
