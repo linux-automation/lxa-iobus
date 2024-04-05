@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "lxa-iobus"
 description = "Linux Automation IOBus Server"
-version = "0.4.2"
+version = "0.5.0"
 authors = [
   { name = "Linux Automation GmbH", email = "info@linux-automation.com" },
 ]
