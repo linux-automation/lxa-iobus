@@ -432,7 +432,7 @@ class LXAIOBusServer:
             if value == "toggle":
                 await node.od.outputs.toggle(pin_name)
 
-            elif value:
+            elif int(value):
                 await node.od.outputs.set_high(pin_name)
 
             else:
