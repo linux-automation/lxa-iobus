@@ -1,11 +1,10 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools", "setuptools_scm[toml]"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "lxa-iobus"
 description = "Linux Automation IOBus Server"
-version = "0.5.1"
 authors = [
   { name = "Linux Automation GmbH", email = "info@linux-automation.com" },
 ]
@@ -17,6 +16,7 @@ dependencies = [
   "python-can",
   "janus",
 ]
+dynamic = ["version"] # via setuptools_scm
 
 [project.scripts]
 optick = "lxa_iobus.cli.optick:main"
@@ -35,6 +35,9 @@ packages = [
   "lxa_iobus.server",
 ]
 include-package-data = true
+
+[tool.setuptools_scm]
+local_scheme = "no-local-version"
 
 [tool.ruff]
 line-length = 119
