@@ -286,17 +286,18 @@ async def cmd_capture(args):
 
                 for _ in range(level):
                     ev = await timers.input(input)
-                    state[input] = ev["state"]
-                    events.append((ev["timestamp"], tuple(state[i] for i in inputs)))
+                    events.append((ev["timestamp"], input, ev["state"]))
 
             events = sorted(events, key=lambda ev: ev[0])
 
-            for ts, ev_state in events:
+            for ts, input, ev_state in events:
                 # Output time values in nanoseconds since optick node startup
                 # instead of clock cycles.
                 ts = ts * 1_000_000_000 // frequency
 
-                line = [str(ts)] + list(str(s) for s in ev_state)
+                state[input] = ev_state
+
+                line = [str(ts)] + list(str(state[i]) for i in inputs)
 
                 print(", ".join(line), flush=True)
 
