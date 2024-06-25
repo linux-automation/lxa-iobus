@@ -795,7 +795,7 @@ class Locator(ProcessDataObject):
 class Adc(ProcessDataObject):
     """Read analog voltages on the node
 
-    The node contains the required calibration data to convert thease measurements
+    The node contains the required calibration data to convert these measurements
     to e.g. volts.
     """
 
