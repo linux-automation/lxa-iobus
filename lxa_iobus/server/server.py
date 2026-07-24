@@ -14,6 +14,63 @@ from lxa_iobus.lpc11xxcanisp.firmware import FIRMWARE_DIR
 STATIC_ROOT = os.path.join(os.path.dirname(__file__), "static")
 logger = logging.getLogger("LXAIOBusServer")
 
+# Server and node status are relatively cheap to fetch because they contain cacheable data.
+# Getting the pin information from the node does however involve multiple roundtrips on the CAN bus.
+# Do the former at 10Hz and the latter at 1Hz.
+EVENT_DELAY_STATUS = 1.0 / 10.0
+EVENT_DELAY_PINS = 1.0 / 1.0
+
+
+class MaybeJsonEventStream:
+    """Serve a single JSON response or an event stream based on user request
+
+    If the user sent a normal GET request: respond with a single JSON response.
+    If the user connected via `new EventSource` respond with an event stream
+    of one JSON line each.
+
+    This de-duplicates messages that encode to the same JSON to reduce network
+    traffic.
+    """
+
+    def __init__(self, request, headers=None):
+        accept = request.headers.get("Accept")
+        self.event_stream = accept == "text/event-stream"
+        self.prev_data = None
+        self.response = StreamResponse()
+        self.request = request
+
+        if headers:
+            self.response.headers.update(headers)
+
+        if self.event_stream:
+            self.response.content_type = "text/event-stream"
+            self.response.headers["Cache-Control"] = "no-cache"
+            self.response.headers["Connection"] = "keep-alive"
+            self.response.headers["X-Accel-Buffering"] = "no"
+        else:
+            self.response.content_type = "application/json"
+
+    async def push(self, message):
+        if not self.response.prepared:
+            await self.response.prepare(self.request)
+
+        data = json.dumps(message).encode()
+
+        if data == self.prev_data:
+            return False
+
+        self.prev_data = data
+
+        if self.event_stream:
+            data = b"data: " + data + b"\n\n"
+
+        try:
+            await self.response.write(data)
+        except ClientConnectionResetError:
+            return True
+
+        return not self.event_stream
+
 
 class LXAIOBusServer:
     def __init__(self, app, loop, network):
@@ -121,8 +178,8 @@ class LXAIOBusServer:
                 logger.exception("flashing failed")
 
     # views ###################################################################
-    async def get_server_info(self, request):
-        response = {
+    def _get_server_info_once(self):
+        return {
             "hostname": os.uname()[1],
             "started": str(self.started),
             "can_interface": self.network.interface,
@@ -130,24 +187,39 @@ class LXAIOBusServer:
             "lss_state": self.network.lss_state.value,
             "can_tx_error": self.network.tx_error,
         }
-        headers = {"Access-Control-Allow-Origin": "*"}
 
-        return json_response(response, headers=headers)
+    async def get_server_info(self, request):
+        headers = {"Access-Control-Allow-Origin": "*"}
+        response = MaybeJsonEventStream(request, headers)
+
+        while self._running:
+            info = self._get_server_info_once()
+            stop = await response.push(info)
+            if stop:
+                break
+
+            await asyncio.sleep(EVENT_DELAY_STATUS)
+
+        return response.response
 
     async def get_nodes(self, request):
-        nodes = []
-
-        for _, node in self.network.nodes.copy().items():
-            nodes.append(node.name)
-
-        response = {
-            "code": 0,
-            "error_message": "",
-            "result": nodes,
-        }
         headers = {"Access-Control-Allow-Origin": "*"}
+        response = MaybeJsonEventStream(request, headers)
 
-        return json_response(response, headers=headers)
+        while self._running:
+            node_names = sorted(node.name for node in self.network.nodes.values())
+            message = {
+                "code": 0,
+                "error_message": "",
+                "result": node_names,
+            }
+            stop = await response.push(message)
+            if stop:
+                break
+
+            await asyncio.sleep(EVENT_DELAY_STATUS)
+
+        return response.response
 
     async def get_node(self, request):
         response = {
@@ -324,7 +396,7 @@ class LXAIOBusServer:
 
         return Response(text=json.dumps(response))
 
-    async def get_pin_info(self, request):
+    async def _get_pin_info_once(self, node_name):
         response = {
             "code": 0,
             "error_message": "",
@@ -332,7 +404,6 @@ class LXAIOBusServer:
         }
 
         try:
-            node_name = request.match_info["node"]
             node = self.network.get_node_by_name(node_name)
 
             pin_info = {
@@ -401,7 +472,22 @@ class LXAIOBusServer:
                 "result": None,
             }
 
-        return Response(text=json.dumps(response))
+        return response
+
+    async def get_pin_info(self, request):
+        node_name = request.match_info["node"]
+
+        response = MaybeJsonEventStream(request)
+
+        while self._running:
+            info = await self._get_pin_info_once(node_name)
+            stop = await response.push(info)
+            if stop:
+                break
+
+            await asyncio.sleep(EVENT_DELAY_PINS)
+
+        return response.response
 
     async def set_pin(self, request):
         response = {
