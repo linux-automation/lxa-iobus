@@ -43,7 +43,6 @@ class LXAIOBusServer:
 
         app.router.add_route("*", "/static/{path_info:.*}", self.static)
 
-        app.router.add_route("*", "/", self.index)
         self.app.router.add_route("*", "/rpc/", self.rpc)
 
         # rest api
@@ -157,9 +156,6 @@ class LXAIOBusServer:
         headers = {"Access-Control-Allow-Origin": "*"}
 
         return json_response(response, headers=headers)
-
-    async def index(self, request):
-        return FileResponse(os.path.join(STATIC_ROOT, "index.html"))
 
     async def static(self, request):
         path = os.path.join(
