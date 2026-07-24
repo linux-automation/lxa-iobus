@@ -10,12 +10,7 @@ authors = [
 ]
 readme = "README.rst"
 license = { file = "LICENSE.txt" }
-dependencies = [
-  "aiohttp~=3.8",
-  "aiohttp-json-rpc==0.13.3",
-  "python-can",
-  "janus",
-]
+dependencies = ["aiohttp~=3.8", "python-can", "janus"]
 dynamic = ["version"] # via setuptools_scm
 
 [project.scripts]

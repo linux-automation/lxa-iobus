@@ -61,11 +61,6 @@ def main():
         help="Host to bind to. Defaults to 'localhost'",
     )
     parser.add_argument(
-        "--shell",
-        action="store_true",
-        help="Embeds an ipython shell for easy debugging",
-    )
-    parser.add_argument(
         "--firmware-directory",
         type=str,
         default="firmware",
@@ -136,23 +131,6 @@ def main():
     except OSError as e:
         if e.errno == errno.ENODEV:  # can interface not available
             exit("interface {} not available".format(args.interface))
-
-    loop.create_task(server.flush_state_periodically())
-
-    if args.shell:
-
-        def _start_shell():
-            import IPython
-            from traitlets.config import Config
-
-            config = Config()
-
-            IPython.embed(config=config)
-
-            # shutdown server
-            os.kill(os.getpid(), signal.SIGTERM)
-
-        loop.create_task(server.rpc.worker_pool.run(_start_shell))
 
     print("starting server on http://{}:{}/".format(args.host, args.port))
 
