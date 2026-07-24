@@ -5,7 +5,7 @@ import os
 from concurrent.futures import CancelledError
 from datetime import datetime
 
-from aiohttp.web import FileResponse, HTTPBadRequest, HTTPForbidden, HTTPFound, HTTPNotFound, Response, json_response
+from aiohttp.web import FileResponse, HTTPBadRequest, HTTPForbidden, HTTPNotFound, Response, json_response
 
 from lxa_iobus.lpc11xxcanisp.can_isp import CanIsp
 from lxa_iobus.lpc11xxcanisp.firmware import FIRMWARE_DIR
@@ -15,12 +15,10 @@ logger = logging.getLogger("LXAIOBusServer")
 
 
 class LXAIOBusServer:
-    def __init__(self, app, loop, network, firmware_directory, allow_custom_firmware):
+    def __init__(self, app, loop, network):
         self.app = app
         self.loop = loop
         self.network = network
-        self.firmware_directory = firmware_directory
-        self.allow_custom_firmware = allow_custom_firmware
         self._isp_console = list()
 
         self.state = {"low_level_nodes": {}, "low_level_nodes_state": {}, "nodes": {}}
@@ -39,42 +37,13 @@ class LXAIOBusServer:
 
         app.router.add_route("GET", "/nodes/{node}/pin-info/", self.get_pin_info)
 
+        app.router.add_route("POST", "/nodes/{node}/update/", self.firmware_update)
+
         app.router.add_route("GET", "/nodes/", self.get_nodes)
         app.router.add_route("GET", "/nodes/{node}/", self.get_node)
 
         app.router.add_route("GET", "/api/v2/node/{node}/raw_sdo/{index}/{sub_index}", self.get_sdo_raw)
         app.router.add_route("POST", "/api/v2/node/{node}/raw_sdo/{index}/{sub_index}", self.send_sdo_raw)
-
-        # firmware urls
-        app.router.add_route(
-            "POST",
-            "/nodes/{node}/flash-firmware/{source}/{file_name}",
-            self.firmware_flash,
-        )
-
-        app.router.add_route(
-            "POST",
-            "/nodes/{node}/update/",
-            self.firmware_update,
-        )
-
-        app.router.add_route(
-            "GET",
-            "/firmware/",
-            self.get_firmware_files,
-        )
-
-        app.router.add_route(
-            "POST",
-            "/firmware/upload/",
-            self.firmware_upload,
-        )
-
-        app.router.add_route(
-            "POST",
-            "/firmware/delete/{file_name}",
-            self.firmware_delete,
-        )
 
         # setup can isp
         self.can_isp = CanIsp(node=network.isp_node, logging_callback=self._isp_logging_callback)
@@ -552,152 +521,6 @@ class LXAIOBusServer:
 
         except Exception as e:
             logger.exception("toggle locator failed")
-
-            response = {
-                "code": 1,
-                "error_message": str(e),
-                "result": None,
-            }
-
-        return Response(text=json.dumps(response))
-
-    # firmware views ##########################################################
-    async def get_firmware_files(self, request):
-        upstream_files = list(
-            name for name in os.listdir(FIRMWARE_DIR) if not name.startswith(".") and name.endswith(".bin")
-        )
-
-        local_files = []
-
-        if self.allow_custom_firmware:
-            for i in os.listdir(self.firmware_directory):
-                if i.startswith("."):
-                    continue
-                local_files.append(i)
-
-        response = {
-            "upstream_files": upstream_files,
-            "local_files": local_files,
-            "allow_custom_firmware": self.allow_custom_firmware,
-        }
-
-        return Response(text=json.dumps(response))
-
-    async def firmware_upload(self, request):
-        response = {
-            "code": 0,
-            "error_message": "",
-            "result": None,
-        }
-
-        if not self.allow_custom_firmware:
-            logger.exception("Firmware upload not possible if allow-custom-firmware is not set.")
-            response = {
-                "code": 1,
-                "error_message": "Firmware upload not possible if allow-custom-firmware is not set.",
-                "result": None,
-            }
-            return Response(text=json.dumps(response))
-
-        try:
-            data = await request.post()
-
-            filename = data["file"].filename
-            file_content = data["file"].file.read()
-
-            abs_filename = os.path.join(self.firmware_directory, filename)
-
-            with open(abs_filename, "wb+") as f:
-                f.write(file_content)
-
-            return HTTPFound("/#firmware-files")
-
-        except Exception as e:
-            logger.exception("firmware upload failed")
-
-            response = {
-                "code": 1,
-                "error_message": str(e),
-                "result": None,
-            }
-
-        return Response(text=json.dumps(response))
-
-    async def firmware_delete(self, request):
-        response = {
-            "code": 0,
-            "error_message": "",
-            "result": None,
-        }
-
-        if not self.allow_custom_firmware:
-            logger.exception("Firmware delete not possible if allow-custom-firmware is not set.")
-            response = {
-                "code": 1,
-                "error_message": "Firmware delete not possible if allow-custom-firmware is not set.",
-                "result": None,
-            }
-            return Response(text=json.dumps(response))
-
-        try:
-            filename = os.path.join(self.firmware_directory, request.match_info["file_name"])
-
-            os.remove(filename)
-
-        except Exception as e:
-            logger.exception("firmware delete failed")
-
-            response = {
-                "code": 1,
-                "error_message": str(e),
-                "result": None,
-            }
-
-        return Response(text=json.dumps(response))
-
-    async def firmware_flash(self, request):
-        response = {
-            "code": 0,
-            "error_message": "",
-            "result": None,
-        }
-
-        if not self.allow_custom_firmware:
-            logger.exception("Custom firmware flashing not possible if allow-custom-firmware is not set.")
-            response = {
-                "code": 1,
-                "error_message": "Custom firmware flashing not possible if allow-custom-firmware is not set.",
-                "result": None,
-            }
-            return Response(text=json.dumps(response))
-
-        try:
-            node_name = request.match_info["node"]
-            source = request.match_info["source"]
-            file_name = request.match_info["file_name"]
-
-            node = self.network.get_node_by_name(node_name)
-
-            # find firmware file
-            if source == "local":
-                file_name = os.path.join(self.firmware_directory, file_name)
-
-            elif source == "upstream":
-                file_name = os.path.join(FIRMWARE_DIR, file_name)
-
-            else:
-                raise ValueError("unknown mode")
-
-            await self.flash_jobs.put(
-                (
-                    False,
-                    node,
-                    file_name,
-                )
-            )
-
-        except Exception as e:
-            logger.exception("Firmware flashing failed")
 
             response = {
                 "code": 1,
