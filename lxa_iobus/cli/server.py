@@ -61,17 +61,6 @@ def main():
         help="Host to bind to. Defaults to 'localhost'",
     )
     parser.add_argument(
-        "--firmware-directory",
-        type=str,
-        default="firmware",
-        help="Directory where uploaded firmware is stored. Only used when --allow-custom-firmware is set.",
-    )
-    parser.add_argument(
-        "--allow-custom-firmware",
-        action="store_true",
-        help="Allows to upload and flash own (arbitrary) firmware into the program section of the nodes.",
-    )
-    parser.add_argument(
         "--lss-address-cache-file",
         type=str,
         default="",
@@ -124,8 +113,6 @@ def main():
             app,
             loop,
             network,
-            args.firmware_directory,
-            args.allow_custom_firmware,
         )
 
     except OSError as e:
