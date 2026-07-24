@@ -358,7 +358,9 @@ class LXAIOBusServer:
         try:
             node_name = request.match_info["node"]
             pin_name = request.match_info["pin"]
-            post = await request.post()
+
+            content_type = request.headers.get("Content-Type")
+            post = await (request.json() if content_type == "application/json" else request.post())
             value = post["value"]
 
             node = self.network.get_node_by_name(node_name)
