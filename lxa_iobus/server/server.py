@@ -7,7 +7,15 @@ from concurrent.futures import CancelledError
 from datetime import datetime
 
 from aiohttp import ClientConnectionResetError
-from aiohttp.web import HTTPBadRequest, HTTPForbidden, HTTPNotFound, Response, StreamResponse, json_response
+from aiohttp.web import (
+    FileResponse,
+    HTTPBadRequest,
+    HTTPForbidden,
+    HTTPNotFound,
+    Response,
+    StreamResponse,
+    json_response,
+)
 
 from lxa_iobus.lpc11xxcanisp.can_isp import CanIsp
 from lxa_iobus.lpc11xxcanisp.firmware import FIRMWARE_DIR
@@ -108,6 +116,7 @@ class LXAIOBusServer:
 
         # static files
         app.router.add_static("/static", STATIC_ROOT)
+        app.router.add_route("GET", "/", self.get_html("nodes.html"))
 
         # setup can isp
         self.can_isp = CanIsp(node=network.isp_node, logging_callback=self._isp_logging_callback)
@@ -203,6 +212,12 @@ class LXAIOBusServer:
             await asyncio.sleep(EVENT_DELAY_STATUS)
 
         return response.response
+
+    def get_html(self, name):
+        def handler(request):
+            return FileResponse(os.path.join(STATIC_ROOT, name))
+
+        return handler
 
     async def get_nodes(self, request):
         headers = {"Access-Control-Allow-Origin": "*"}

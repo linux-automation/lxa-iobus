@@ -1,0 +1,58 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" type="text/css" href="/static/lib/pure-min.css" />
+    <link rel="stylesheet" type="text/css" href="/static/style.css" />
+    <title>LXA IOBus Server</title>
+  </head>
+  <body>
+    <div id="main-grid">
+      <div id="banner"></div>
+
+      <div id="content">
+        <h1>LXA IOBus Server</h1>
+
+        <div id="server-info">
+          <div>
+            <strong>Hostname:</strong> <span id="server-info-hostname"></span>
+          </div>
+          <div>
+            <strong>Server Started:</strong>
+            <span id="server-info-server-started"></span>
+          </div>
+          <div>
+            <strong>Can Interface:</strong>
+            <span id="server-info-can-interface"></span>
+            <span id="server-info-can-interface-state"> </span>
+            <span id="server-info-can-tx-error"> </span>
+          </div>
+          <div>
+            <strong>LSS State:</strong> <span id="server-info-lss-state"></span>
+          </div>
+        </div>
+
+        <div class="pure-menu pure-menu-horizontal">
+          <ul class="pure-menu-list">
+            <li class="pure-menu-item pure-menu-selected">
+              <a href="/" class="pure-menu-link">Nodes</a>
+            </li>
+          </ul>
+        </div>
+
+        <table id="node-table" class="pure-table" width="100%">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Address</th>
+              <th>Driver</th>
+            </tr>
+          </thead>
+          <tbody id="node-table-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <script src="/static/common.js"></script>
+    <script src="/static/nodes.js"></script>
+  </body>
+</html>
