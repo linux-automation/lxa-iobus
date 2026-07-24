@@ -259,7 +259,7 @@ async def cmd_capture(args):
         trigger_levels = trigger_levels * len(inputs)
 
     # Set the high/low decision boundary for the input pin
-    for input, level in zip(inputs, trigger_levels):
+    for input, level in zip(inputs, trigger_levels, strict=True):
         await triggers.set_threshold(input, level)
 
     # Clear the flags register

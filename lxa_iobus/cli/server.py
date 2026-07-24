@@ -69,12 +69,12 @@ def main():
         "--firmware-directory",
         type=str,
         default="firmware",
-        help="Directory where uploaded firmware is stored. " "Only used when --allow-custom-firmware is set.",
+        help="Directory where uploaded firmware is stored. Only used when --allow-custom-firmware is set.",
     )
     parser.add_argument(
         "--allow-custom-firmware",
         action="store_true",
-        help="Allows to upload and flash own (arbitrary) firmware " "into the program section of the nodes.",
+        help="Allows to upload and flash own (arbitrary) firmware into the program section of the nodes.",
     )
     parser.add_argument(
         "--lss-address-cache-file",
