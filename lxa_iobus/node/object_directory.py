@@ -152,7 +152,7 @@ class SubIndex(object):
         if self._fields is None:
             return values[0]
         else:
-            return dict(zip(self._fields, values))
+            return dict(zip(self._fields, values, strict=True))
 
 
 class BitFieldSubIndex(object):

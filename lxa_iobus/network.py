@@ -190,10 +190,10 @@ class LxaNetwork:
                     # Thus this is something normal to happen.
                     # We will just wait for the bus to recover.
                     if not self.tx_error:
-                        logger.warn("tx: TX-buffer full. " "Maybe there is a problem with the bus?")
+                        logger.warn("tx: TX-buffer full. Maybe there is a problem with the bus?")
                         self.tx_error = True
                     else:
-                        logger.debug("tx: TX-buffer full. " "Maybe there is a problem with the bus?")
+                        logger.debug("tx: TX-buffer full. Maybe there is a problem with the bus?")
                 else:
                     logger.error("tx: Unhandled CAN error: %s", e)
                     break
