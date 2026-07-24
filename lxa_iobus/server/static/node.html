@@ -1,0 +1,100 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" type="text/css" href="/static/lib/pure-min.css" />
+    <link rel="stylesheet" type="text/css" href="/static/style.css" />
+    <title>LXA IOBus Server</title>
+  </head>
+  <body>
+    <div id="main-grid">
+      <div id="banner"></div>
+
+      <div id="content">
+        <h1>LXA IOBus Server</h1>
+
+        <div id="server-info">
+          <div>
+            <strong>Hostname:</strong> <span id="server-info-hostname"></span>
+          </div>
+          <div>
+            <strong>Server Started:</strong>
+            <span id="server-info-server-started"></span>
+          </div>
+          <div>
+            <strong>Can Interface:</strong>
+            <span id="server-info-can-interface"></span>
+            <span id="server-info-can-interface-state"> </span>
+            <span id="server-info-can-tx-error"> </span>
+          </div>
+          <div>
+            <strong>LSS State:</strong> <span id="server-info-lss-state"></span>
+          </div>
+        </div>
+
+        <div class="pure-menu pure-menu-horizontal">
+          <ul class="pure-menu-list">
+            <li class="pure-menu-item">
+              <a href="/" class="pure-menu-link">Nodes</a>
+            </li>
+            <li class="pure-menu-item pure-menu-selected">
+              <a href="/node" class="pure-menu-link">Node</a>
+            </li>
+          </ul>
+        </div>
+
+        <button
+          id="firmware-update-button"
+          class="pure-button button-error"
+          style="display: none"
+        ></button>
+
+        <table id="node-info" class="pure-table">
+          <tbody>
+            <tr class="node-name" style="display: none">
+              <th>Name</th>
+              <td></td>
+            </tr>
+            <tr class="node-address" style="display: none">
+              <th>Address</th>
+              <td></td>
+            </tr>
+            <tr class="node-serial" style="display: none">
+              <th>Serial</th>
+              <td></td>
+            </tr>
+            <tr class="node-driver" style="display: none">
+              <th>Driver</th>
+              <td></td>
+            </tr>
+            <tr class="node-vendor-name" style="display: none">
+              <th>Vendor</th>
+              <td></td>
+            </tr>
+            <tr class="node-device-name" style="display: none">
+              <th>Device Name</th>
+              <td></td>
+            </tr>
+            <tr class="node-hardware-version" style="display: none">
+              <th>Hardware Version</th>
+              <td></td>
+            </tr>
+            <tr class="node-software-version" style="display: none">
+              <th>Software Version</th>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Locator</h3>
+        <button id="locator" class="pure-button">Locator</button>
+
+        <div id="outputs"></div>
+        <div id="inputs"></div>
+        <div id="adcs"></div>
+      </div>
+    </div>
+
+    <script src="/static/common.js"></script>
+    <script src="/static/node.js"></script>
+  </body>
+</html>

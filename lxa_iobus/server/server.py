@@ -117,6 +117,7 @@ class LXAIOBusServer:
         # static files
         app.router.add_static("/static", STATIC_ROOT)
         app.router.add_route("GET", "/", self.get_html("nodes.html"))
+        app.router.add_route("GET", "/node", self.get_html("node.html"))
 
         # setup can isp
         self.can_isp = CanIsp(node=network.isp_node, logging_callback=self._isp_logging_callback)

@@ -10,6 +10,7 @@ async function set_nodes(nodes) {
     }
 
     const a_name = document.createElement("a");
+    a_name.href = `/node#${node_name}`;
     a_name.style.color = "inherit";
     a_name.style.textDecoration = "none";
     a_name.innerText = node_name;
