@@ -5,7 +5,8 @@ import os
 from concurrent.futures import CancelledError
 from datetime import datetime
 
-from aiohttp.web import HTTPBadRequest, HTTPForbidden, HTTPNotFound, Response, json_response
+from aiohttp import ClientConnectionResetError
+from aiohttp.web import HTTPBadRequest, HTTPForbidden, HTTPNotFound, Response, StreamResponse, json_response
 
 from lxa_iobus.lpc11xxcanisp.can_isp import CanIsp
 from lxa_iobus.lpc11xxcanisp.firmware import FIRMWARE_DIR
@@ -20,6 +21,7 @@ class LXAIOBusServer:
         self.loop = loop
         self.network = network
         self._isp_console = list()
+        self._isp_console_queues = list()
 
         self.state = {"low_level_nodes": {}, "low_level_nodes_state": {}, "nodes": {}}
 
@@ -60,7 +62,31 @@ class LXAIOBusServer:
         self._running = False
 
     async def _isp_logging_callback(self, message):
-        self._isp_console = self._isp_console[-99:] + [message]
+        for line in message.split("\n"):
+            prev_id = "0"
+            if self._isp_console:
+                prev_id, _ = self._isp_console[-1]
+
+            entry = (str(int(prev_id) + 1), line)
+
+            self._isp_console = self._isp_console[-99:] + [entry]
+
+            for queue in self._isp_console_queues:
+                await queue.put(entry)
+
+    def _isp_console_queue(self, last_id=None):
+        queue = asyncio.Queue()
+
+        for id, line in self._isp_console:
+            if id == last_id:
+                last_id = None
+
+            if last_id is None:
+                queue.put_nowait((id, line))
+
+        self._isp_console_queues.append(queue)
+
+        return queue
 
     async def flash_worker(self):
         while self._running:
@@ -167,7 +193,31 @@ class LXAIOBusServer:
         return json_response(response, headers=headers)
 
     async def get_isp_console(self, request):
-        return Response(text="\n".join(self._isp_console))
+        accept = request.headers.get("Accept")
+
+        if accept != "text/event-stream":
+            return Response(text="\n".join(line for _id, line in self._isp_console))
+
+        response = StreamResponse()
+        response.content_type = "text/event-stream"
+        response.headers["Cache-Control"] = "no-cache"
+        response.headers["Connection"] = "keep-alive"
+        response.headers["X-Accel-Buffering"] = "no"
+        await response.prepare(request)
+
+        last_id = request.headers.get("Last-Event-ID")
+        queue = self._isp_console_queue(last_id)
+
+        try:
+            while self._running:
+                id, line = await queue.get()
+                await response.write(f"id: {id}\ndata: {line}\n\n".encode())
+        except ClientConnectionResetError:
+            pass
+        finally:
+            self._isp_console_queues.remove(queue)
+
+        return response
 
     async def get_pins(self, request):
         response = {
