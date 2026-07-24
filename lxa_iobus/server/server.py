@@ -4,11 +4,8 @@ import logging
 import os
 from concurrent.futures import CancelledError
 from datetime import datetime
-from functools import partial
-from pprint import pformat
 
 from aiohttp.web import FileResponse, HTTPBadRequest, HTTPForbidden, HTTPFound, HTTPNotFound, Response, json_response
-from aiohttp_json_rpc import JsonRpc
 
 from lxa_iobus.lpc11xxcanisp.can_isp import CanIsp
 from lxa_iobus.lpc11xxcanisp.firmware import FIRMWARE_DIR
@@ -30,20 +27,7 @@ class LXAIOBusServer:
 
         self.started = datetime.now()
 
-        # setup aiohttp
-        self.rpc = JsonRpc(loop=self.loop, max_workers=6)
-        self.worker_pool = self.rpc.worker_pool
-        app["rpc"] = self.rpc
-
-        self.rpc.add_topics(
-            ("state",),
-            ("firmware",),
-            ("isp_console",),
-        )
-
         app.router.add_route("*", "/static/{path_info:.*}", self.static)
-
-        self.app.router.add_route("*", "/rpc/", self.rpc)
 
         # rest api
         app.router.add_route("GET", "/server-info/", self.get_server_info)
@@ -92,9 +76,6 @@ class LXAIOBusServer:
             self.firmware_delete,
         )
 
-        # flush initial state
-        self.loop.create_task(self.flush_state())
-
         # setup can isp
         self.can_isp = CanIsp(node=network.isp_node, logging_callback=self._isp_logging_callback)
 
@@ -108,8 +89,6 @@ class LXAIOBusServer:
 
     async def _isp_logging_callback(self, message):
         self._isp_console = self._isp_console[-99:] + [message]
-
-        await self.rpc.notify("isp_console", self._isp_console)
 
     async def flash_worker(self):
         while self._running:
@@ -760,43 +739,3 @@ class LXAIOBusServer:
             }
 
         return Response(text=json.dumps(response))
-
-    # state (rpc) #############################################################
-    async def flush_state(self):
-        state = []
-        nodes = self.network.nodes.copy()
-        node_ids = sorted(nodes.keys())
-
-        for node_id in node_ids:
-            node = nodes[node_id]
-
-            # get node info
-            try:
-                node_info = await node.info()
-
-            except Exception as e:
-                logger.warning("Exception during node.info() for node {}: {}".format(node, repr(e)))
-                node_info = {}
-
-            driver = node.product.__class__.__name__ + "Driver"
-
-            state.append(
-                [
-                    node.name,
-                    {
-                        "locator": node.locator_state,
-                        "driver": driver,
-                        "info": node_info,
-                    },
-                ]
-            )
-
-        await self.rpc.notify("state", state)
-
-    def flush_state_sync(self, wait=True):
-        self.rpc.worker_pool.run_sync(partial(self.rpc.notify, "state", pformat(self.state)), wait=wait)
-
-    async def flush_state_periodically(self):
-        while self._running:
-            await self.flush_state()
-            await asyncio.sleep(1)
