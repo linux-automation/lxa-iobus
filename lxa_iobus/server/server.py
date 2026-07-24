@@ -40,6 +40,8 @@ class LXAIOBusServer:
         app.router.add_route("GET", "/nodes/", self.get_nodes)
         app.router.add_route("GET", "/nodes/{node}/", self.get_node)
 
+        app.router.add_route("GET", "/api/v2/isp_log", self.get_isp_console)
+
         app.router.add_route("GET", "/api/v2/node/{node}/raw_sdo/{index}/{sub_index}", self.get_sdo_raw)
         app.router.add_route("POST", "/api/v2/node/{node}/raw_sdo/{index}/{sub_index}", self.send_sdo_raw)
 
@@ -163,6 +165,9 @@ class LXAIOBusServer:
         headers = {"Access-Control-Allow-Origin": "*"}
 
         return json_response(response, headers=headers)
+
+    async def get_isp_console(self, request):
+        return Response(text="\n".join(self._isp_console))
 
     async def get_pins(self, request):
         response = {
