@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import math
 import os
 from concurrent.futures import CancelledError
 from datetime import datetime
@@ -99,6 +100,7 @@ class LXAIOBusServer:
         app.router.add_route("GET", "/nodes/", self.get_nodes)
         app.router.add_route("GET", "/nodes/{node}/", self.get_node)
 
+        app.router.add_route("GET", "/api/v2/status", self.get_status)
         app.router.add_route("GET", "/api/v2/isp_log", self.get_isp_console)
 
         app.router.add_route("GET", "/api/v2/node/{node}/raw_sdo/{index}/{sub_index}", self.get_sdo_raw)
@@ -263,6 +265,71 @@ class LXAIOBusServer:
         headers = {"Access-Control-Allow-Origin": "*"}
 
         return json_response(response, headers=headers)
+
+    async def get_status(self, request):
+        server = request.query.get("server")
+        nodes = request.query.get("nodes")
+        pins = request.query.getall("pins", [])
+        server_interval = request.query.get("server_interval", "0")
+        nodes_interval = request.query.get("nodes_interval", "0")
+        pins_interval = request.query.get("pins_interval", "0")
+
+        # If the request did not contain any request parameters
+        # return a default set of server status info and node list.
+        if server is None and nodes is None and not pins:
+            server = "true"
+            nodes = "true"
+
+        server = (server is not None) and server != "false"
+        nodes = (nodes is not None) and nodes != "false"
+        server_interval = max(EVENT_DELAY_STATUS, float(server_interval))
+        nodes_interval = max(EVENT_DELAY_STATUS, float(nodes_interval))
+        pins_interval = max(EVENT_DELAY_PINS, float(pins_interval))
+
+        response = MaybeJsonEventStream(request)
+
+        server_delay = 0.0 if server else math.inf
+        nodes_delay = 0.0 if nodes else math.inf
+        pin_delay = 0.0 if pins else math.inf
+
+        message = dict()
+
+        while self._running:
+            if server_delay <= 0.0:
+                server_delay += server_interval
+                message["server"] = self._get_server_info_once()
+
+            if nodes_delay <= 0:
+                nodes_delay += nodes_interval
+
+                message["nodes"] = dict()
+
+                for node in self.network.nodes.values():
+                    message["nodes"][node.name] = {
+                        "locator": node.locator_state,
+                        "driver": f"{node.product.__class__.__name__}Driver",
+                        "info": await node.info(),
+                    }
+
+            if pin_delay <= 0.0:
+                pin_delay += pins_interval
+
+                message["pins"] = dict()
+
+                for node_name in pins:
+                    message["pins"][node_name] = await self._get_pin_info_once(node_name)
+
+            stop = await response.push(message)
+            if stop:
+                break
+
+            delay = min(server_delay, nodes_delay, pin_delay)
+            await asyncio.sleep(delay)
+            server_delay -= delay
+            nodes_delay -= delay
+            pin_delay -= delay
+
+        return response.response
 
     async def get_isp_console(self, request):
         accept = request.headers.get("Accept")
