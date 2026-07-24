@@ -5,7 +5,7 @@ import os
 from concurrent.futures import CancelledError
 from datetime import datetime
 
-from aiohttp.web import FileResponse, HTTPBadRequest, HTTPForbidden, HTTPNotFound, Response, json_response
+from aiohttp.web import HTTPBadRequest, HTTPForbidden, HTTPNotFound, Response, json_response
 
 from lxa_iobus.lpc11xxcanisp.can_isp import CanIsp
 from lxa_iobus.lpc11xxcanisp.firmware import FIRMWARE_DIR
@@ -25,8 +25,6 @@ class LXAIOBusServer:
 
         self.started = datetime.now()
 
-        app.router.add_route("*", "/static/{path_info:.*}", self.static)
-
         # rest api
         app.router.add_route("GET", "/server-info/", self.get_server_info)
         app.router.add_route("GET", "/nodes/{node}/pins/{pin}/", self.get_pin)
@@ -44,6 +42,9 @@ class LXAIOBusServer:
 
         app.router.add_route("GET", "/api/v2/node/{node}/raw_sdo/{index}/{sub_index}", self.get_sdo_raw)
         app.router.add_route("POST", "/api/v2/node/{node}/raw_sdo/{index}/{sub_index}", self.send_sdo_raw)
+
+        # static files
+        app.router.add_static("/static", STATIC_ROOT)
 
         # setup can isp
         self.can_isp = CanIsp(node=network.isp_node, logging_callback=self._isp_logging_callback)
@@ -104,17 +105,6 @@ class LXAIOBusServer:
         headers = {"Access-Control-Allow-Origin": "*"}
 
         return json_response(response, headers=headers)
-
-    async def static(self, request):
-        path = os.path.join(
-            STATIC_ROOT,
-            os.path.relpath(request.path, "/static/"),
-        )
-
-        if not os.path.exists(path):
-            return Response(text="404: not found", status=404)
-
-        return FileResponse(path)
 
     async def get_nodes(self, request):
         nodes = []
