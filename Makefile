@@ -81,6 +81,4 @@ qa-ruff-fix: $(PYTHON_TESTING_ENV)/.created
 
 qa-prettier: node_modules/.created
 	npx prettier --check pyproject.toml
-	npx prettier --check lxa_iobus/server/static/index.html
-	npx prettier --check lxa_iobus/server/static/main.js
-	npx prettier --check lxa_iobus/server/static/style.css
+	npx prettier --check lxa_iobus/server/static/
