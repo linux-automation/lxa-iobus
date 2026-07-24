@@ -113,6 +113,7 @@ function set_adcs(adcs) {
 
 async function firmware_upgrade(node_name) {
   await post_json(`/nodes/${node_name}/update/`, {});
+  window.location.href = "/isp";
 }
 
 async function set_node(node_name, node) {
