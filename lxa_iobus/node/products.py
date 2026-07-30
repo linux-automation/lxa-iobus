@@ -10,8 +10,8 @@ class Node(object):
         return f"{self.NAME_PREFIX}{self.serial:05}"
 
     @classmethod
-    def try_match(cls, lss_address):
-        driver_addr = [cls.LSS_VENDOR, cls.LSS_PRODUCT, cls.LSS_REVISON]
+    def try_match(cls, lss_address: list[int]) -> "Node | None":
+        driver_addr = [cls.LSS_VENDOR, cls.LSS_PRODUCT, cls.LSS_REVISION]
 
         if lss_address[:3] == driver_addr:
             return cls(lss_address[3])
@@ -32,7 +32,7 @@ class Iobus4Do3Di3Ai(Node):
 
     LSS_VENDOR = 0x507
     LSS_PRODUCT = 2
-    LSS_REVISON = 3
+    LSS_REVISION = 3
 
     NAME_PREFIX = "4DO-3DI-3AI-00005."
     FIRMWARE_FILE = "lxatac_can_io-t01.bin"
@@ -59,7 +59,7 @@ class PTXIOMux(Node):
 
     LSS_VENDOR = 0
     LSS_PRODUCT = 4
-    LSS_REVISON = 1
+    LSS_REVISION = 1
 
     NAME_PREFIX = "PTXIOMux-00004."
     FIRMWARE_FILE = "ptxtac-S03_CAN_GPIO.bin"
@@ -82,7 +82,7 @@ class EthernetMux(Node):
 
     LSS_VENDOR = 0x507
     LSS_PRODUCT = 1
-    LSS_REVISON = 4
+    LSS_REVISION = 4
 
     NAME_PREFIX = "Ethernet-Mux-00012."
     FIRMWARE_FILE = "ethmux-S01.bin"
@@ -105,7 +105,7 @@ class Optick(Node):
 
     LSS_VENDOR = 0x507
     LSS_PRODUCT = 3
-    LSS_REVISON = 1
+    LSS_REVISION = 1
 
     NAME_PREFIX = "Optick-00043."
     FIRMWARE_FILE = "optick-t01.bin"
@@ -131,11 +131,12 @@ class Unknown(Node):
     OUTPUT_NAMES = None
 
     @classmethod
-    def try_match(cls, node):
-        return cls.NAME_PREFIX + node.address
+    def try_match(cls, lss_address: list[int]) -> "Node | None":
+        """Matches every lss_address and returns an Unknown-instance."""
+        return cls(lss_address[3])
 
 
-def find_product(lss_address):
+def find_product(lss_address: list[int]):
     for node_cls in [Iobus4Do3Di3Ai, PTXIOMux, EthernetMux, Optick]:
         node = node_cls.try_match(lss_address)
 
