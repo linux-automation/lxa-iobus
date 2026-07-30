@@ -216,7 +216,7 @@ the directory and start a server that binds to ``http://localhost:8080/``.
    rm -rf env && \
    python3.7 -m venv env && \
    . env/bin/activate && \
-   pip install -e .[full] && \
+   pip install -e . && \
    date > env/.created
    Obtaining file:///home/chris/tmp/lxa-iobus
    [...]
@@ -277,7 +277,7 @@ Create a venv and install ``lxa-iobus-server``:
    rm -rf env && \
    python3 -m venv env && \
    . env/bin/activate && \
-   pip install -e .[full] && \
+   pip install -e . && \
    date > env/.created
    Obtaining file:///home/chris/work/Projects/github/lxa-iobus
    [...]
