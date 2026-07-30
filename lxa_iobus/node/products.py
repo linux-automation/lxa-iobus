@@ -2,6 +2,18 @@ class Node(object):
     def __init__(self, serial):
         self.serial = serial
 
+    LSS_VENDOR = 0x507
+    LSS_PRODUCT = None
+    LSS_REVISION = None
+
+    NAME_PREFIX = "AbstractNode-"
+    FIRMWARE_FILE = None
+    FIRMWARE_VERSION = None
+
+    ADC_NAMES = None
+    INPUT_NAMES = None
+    OUTPUT_NAMES = None
+
     def name(self):
         """Construct a human-readable device name from a driver
         specific prefix and the zero-padded decimal serial number
