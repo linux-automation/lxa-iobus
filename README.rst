@@ -89,7 +89,7 @@ the directory and start a server that binds to ``http://localhost:8080/``.
    rm -rf env && \
    python3.7 -m venv env && \
    . env/bin/activate && \
-   pip install -e .[full] && \
+   pip install -e . && \
    date > env/.created
    Obtaining file:///home/chris/tmp/lxa-iobus
    [...]

@@ -9,7 +9,7 @@ $(PYTHON_VENV)/.created: pyproject.toml
 	rm -rf $(PYTHON_VENV) && \
 	$(PYTHON) -m venv $(PYTHON_VENV) && \
 	. $(PYTHON_VENV)/bin/activate && \
-	python3 -m pip install -e .[full] && \
+	python3 -m pip install -e . && \
 	date > $(PYTHON_VENV)/.created
 
 .PHONY: env clean server
