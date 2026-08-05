@@ -19,8 +19,12 @@ server:
    $ curl http://localhost:8080/nodes/Ethernet-Mux-00003.00020/pins/SW/
    {"code": 0, "error_message": "", "result": 0}
 
-   # Set the status of a pin:
+   # Set the status of a pin (form-encoded):
    $ curl -d "value=0" -X POST http://localhost:8080/nodes/Ethernet-Mux-00003.00020/pins/SW/
+   {"code": 0, "error_message": "", "result": null}
+
+   # Set the status of a pin (JSON):
+   $ curl -H "Content-Type: application/json" -d '{"value": "toggle"}' -X POST http://localhost:8080/nodes/Ethernet-Mux-00003.00020/pins/SW/
    {"code": 0, "error_message": "", "result": null}
 
    # Toggle the Locator LED:
