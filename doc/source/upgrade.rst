@@ -30,8 +30,8 @@ Now you can start your service again:
 
    $ sudo systemctl start lxa-iobus.service
 
-Bundled Firmware Upgrades
--------------------------
+Firmware Upgrades
+-----------------
 
 .. _firmware-upgrade:
 
@@ -65,57 +65,3 @@ web interface where a log of the flashing progress is shown:
 
 Once the flashing is compled you can return to the node information
 by selecting the "Nodes" tab at the top.
-
-Firmware Upgrades using the danger-zone button
-----------------------------------------------
-
-The ``lxa-iobus-server`` allows you to flash arbitrary files into the firmware
-section of any node.
-As it is generally a bad idea to flash arbitrary firmware into a device this
-feature is disabled by default.
-
-.. warning::
-
-   With this option you can damage your IOBus devices.
-
-If you intend to use this feature (e.g. to flash a beta-firmware or if you want
-to deploy your own firmware) you have to use the ``--allow-custom-firmware``
-switch on the command line, e.g.:
-
-::
-
-    $ lxa-iobus-server --allow-custom-firmware --firmware-directory firmware/ can0
-
-The additional command line switch ``--firmware directory <dir>`` allows to
-specify the directory in which uploaded firmware files are stored.
-If you omit this switch the default directory ``firmware/`` in the project root
-is used.
-
-With the ``--allow-custom-firmware`` switch enabled two new features are available:
-
-* The *Firmware Files* view now contains the option to upload and delete
-  custom firmware files.
-* Every node view now has the option to select an arbitrary file to flash.
-
-To flash an arbitrary file first upload the binary using the *Firmware Files*
-view:
-
-.. figure:: product-firmware-upgrade-custom-fw.png
-   :alt: IOBus Server Web Interface - Firmware Files view
-
-   The *Firmware Files* view. The files listed under *Upstream Firmware files*
-   have been shipped with the server.
-   The files listed under *Local Firmware Files* have been uploaded by the user.
-
-New files can be uploaded using the *Browse* and *Upload* -buttons.
-Here a file called ``candleLight_fw.bin`` has been uploaded by the user.
-
-Afterwards this file can be flashed to an arbitrary node in the *Nodes* view:
-
-.. figure:: product-firmware-upgrade-node-custom-fw.png
-   :alt: IOBus Server Web Interface - Node view with custom firmware enabled
-
-   The section *Flash* for this nodes lists all firmware files available.
-
-
-Select the correct file and start the transfer using the *Flash* -button.
