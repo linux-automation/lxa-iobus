@@ -160,7 +160,9 @@ function keep_status_updated(node_name) {
     status_es = null;
   }
 
-  status_es = new EventSource(`/api/v2/status?server&nodes&pins=${node_name}`);
+  status_es = new SharedEventSource(
+    `/api/v2/status?server&nodes&pins=${node_name}`,
+  );
   status_es.onmessage = (event) => {
     const message = JSON.parse(event.data);
     const node = message.nodes[node_name];
