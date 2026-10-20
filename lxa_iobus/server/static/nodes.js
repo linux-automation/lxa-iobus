@@ -43,7 +43,7 @@ async function set_nodes(nodes) {
 }
 
 function keep_status_updated() {
-  const es = new EventSource("/api/v2/status?server&nodes");
+  const es = new SharedEventSource("/api/v2/status?server&nodes");
 
   es.onmessage = (event) => {
     const message = JSON.parse(event.data);
