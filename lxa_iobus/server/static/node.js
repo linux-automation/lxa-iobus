@@ -162,6 +162,7 @@ function keep_status_updated(node_name) {
 
   status_es = new SharedEventSource(
     `/api/v2/status?server&nodes&pins=${node_name}`,
+    1,
   );
   status_es.onmessage = (event) => {
     const message = JSON.parse(event.data);

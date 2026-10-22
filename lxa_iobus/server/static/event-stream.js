@@ -5,8 +5,11 @@
 // SharedEventSource is a drop-in replacement for EventSource whose
 // connection is shared across all tabs of this origin: for every distinct
 // stream URL the browser keeps only a single connection open.
+//
+// The optional `backlog` argument requests that the `backlog` most recent
+// messages of the stream are replayed immediately after subscribing.
 class SharedEventSource {
-  constructor(url) {
+  constructor(url, backlog = 0) {
     this.url = url;
     this.onopen = null;
     this.onerror = null;
@@ -38,7 +41,7 @@ class SharedEventSource {
       }
     };
 
-    this._port.postMessage({ type: "subscribe", url: url });
+    this._port.postMessage({ type: "subscribe", url: url, backlog: backlog });
   }
 
   close() {

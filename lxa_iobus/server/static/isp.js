@@ -1,7 +1,7 @@
 "use strict";
 
 function keep_isp_console_updated() {
-  const es = new SharedEventSource("/api/v2/isp_log");
+  const es = new SharedEventSource("/api/v2/isp_log", 100);
   const isp_console = document.getElementById("isp-console");
 
   es.onmessage = (event) => {
@@ -18,7 +18,7 @@ function keep_isp_console_updated() {
 keep_isp_console_updated();
 
 function keep_server_info_updated() {
-  const es = new SharedEventSource("/api/v2/status?server");
+  const es = new SharedEventSource("/api/v2/status?server", 1);
 
   es.onmessage = (event) => {
     const message = JSON.parse(event.data);
